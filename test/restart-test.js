@@ -70,6 +70,68 @@ describe('restarting a cycle app', () => {
       setTimeout(() => {
         assert.equal($('.count').text(), 6);
 
+
+        $('.test').remove();
+        done();
+      }, 100);
+    }, 100);
+  });
+});
+
+describe('restarting a cycle app with multiple streams', () => {
+  it('works', (done) => {
+    makeTestContainer();
+
+    function main ({DOM}) {
+      const add$ = DOM
+        .select('.add')
+        .events('click')
+        .map(_ => 1);
+
+      const subtract$ = DOM
+        .select('.subtract')
+        .events('click')
+        .map(_ => -1);
+
+      const count$ = add$.merge(subtract$)
+        .scan((total, change) => total + change)
+        .startWith(0);
+
+      return {
+        DOM: count$.map(count =>
+          div('.app', [
+            div('.count', count.toString()),
+            button('.add', '+')
+          ])
+        )
+      };
+    }
+
+    const drivers = {
+      DOM: makeDOMDriver('.test')
+    }
+
+    const {sinks, sources} = run(main, drivers);
+
+    setTimeout(() => {
+      $('.add').click();
+      $('.add').click();
+      $('.add').click();
+
+      assert.equal($('.count').text(), 3);
+
+      $('.subtract').click();
+      $('.subtract').click();
+      $('.subtract').click();
+
+      assert.equal($('.count').text(), 0);
+
+      restart(main, sources, drivers);
+
+      setTimeout(() => {
+        assert.equal($('.count').text(), 0);
+
+        $('.test').remove();
         done();
       }, 100);
     }, 100);
