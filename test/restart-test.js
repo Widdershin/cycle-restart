@@ -2,7 +2,7 @@
 import assert from 'assert';
 import {run} from '@cycle/core';
 import {makeDOMDriver, div, button} from '@cycle/dom';
-import restart from '../src/cycle-restart';
+import restart from '../src/restart';
 
 import {Observable} from 'rx';
 
@@ -34,7 +34,7 @@ describe('restarting a cycle app', () => {
       }
     }
 
-    function main ({DOM}) {
+    function newMain ({DOM}) {
       const count$ = DOM
         .select('.add')
         .events('click')
@@ -51,6 +51,7 @@ describe('restarting a cycle app', () => {
         )
       }
     }
+
     const drivers = {
       DOM: makeDOMDriver('.test')
     }
@@ -64,11 +65,13 @@ describe('restarting a cycle app', () => {
 
       assert.equal($('.count').text(), 3);
 
-      restart(newMain, sources);
+      restart(newMain, sources, drivers);
 
-      assert.equal($('.count').text(), 6);
+      setTimeout(() => {
+        assert.equal($('.count').text(), 6);
 
-      done();
+        done();
+      }, 100);
     }, 100);
   });
 });
