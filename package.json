@@ -2,13 +2,17 @@
   "name": "cycle-restart",
   "version": "0.0.1",
   "description": "Restart a Cycle.js application and preserve state.",
-  "main": "index.js",
+  "main": "lib/restart",
   "directories": {
+    "lib": "lib",
     "test": "test"
   },
   "scripts": {
     "test": "mochify",
-    "autotest": "mochify --watch --transform babelify"
+    "autotest": "mochify --watch --transform babelify",
+    "precompile-lib": "rm -rf lib/ && mkdir -p lib",
+    "compile-lib": "babel src -d lib",
+    "prepublish": "npm run compile-lib"
   },
   "repository": {
     "type": "git",
@@ -30,6 +34,7 @@
   "devDependencies": {
     "@cycle/core": "^6.0.0-rc2",
     "@cycle/dom": "^8.0.0-rc4",
+    "babel-cli": "^6.3.15",
     "babel-core": "^6.3.15",
     "babel-preset-es2015": "^6.3.13",
     "babelify": "^7.2.0",
