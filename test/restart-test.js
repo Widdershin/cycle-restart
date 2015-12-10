@@ -101,7 +101,8 @@ describe('restarting a cycle app with multiple streams', () => {
         DOM: count$.map(count =>
           div('.app', [
             div('.count', count.toString()),
-            button('.add', '+')
+            button('.add', '+'),
+            button('.subtract', '+')
           ])
         )
       };
