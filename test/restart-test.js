@@ -31,7 +31,7 @@ describe('restarting a cycle app', () => {
             button('.add', '+')
           ])
         )
-      }
+      };
     }
 
     function newMain ({DOM}) {
