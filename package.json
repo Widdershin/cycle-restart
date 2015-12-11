@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "mochify",
+    "test": "mochify --transform babelify" ,
     "autotest": "mochify --watch --transform babelify",
     "precompile-lib": "rm -rf lib/ && mkdir -p lib",
     "compile-lib": "babel src -d lib",
