@@ -8,13 +8,22 @@ import {Observable} from 'rx';
 
 import $ from 'jquery';
 
+let testContainerCount = 0;
+
 function makeTestContainer () {
-  $(document.body).append($('<div class="test">'));
+  const selector = 'test-' + testContainerCount;
+  const container = $(`<div class="${selector}">`);
+
+  $(document.body).append(container);
+
+  testContainerCount++;
+
+  return {container, selector: '.' + selector};
 }
 
 describe('restarting a cycle app', () => {
   it('is possible', (done) => {
-    makeTestContainer();
+    const {container, selector} = makeTestContainer();
 
     function main ({DOM}) {
       const count$ = DOM
@@ -49,29 +58,28 @@ describe('restarting a cycle app', () => {
             button('.add', '+')
           ])
         )
-      }
+      };
     }
 
     const drivers = {
-      DOM: makeDOMDriver('.test')
-    }
+      DOM: makeDOMDriver(selector)
+    };
 
-    const {sinks, sources} = run(main, drivers);
+    const {sources} = run(main, drivers);
 
     setTimeout(() => {
-      $('.add').click();
-      $('.add').click();
-      $('.add').click();
+      container.find('.add').click();
+      container.find('.add').click();
+      container.find('.add').click();
 
-      assert.equal($('.count').text(), 3);
+      assert.equal(container.find('.count').text(), 3);
 
       restart(newMain, sources, drivers);
 
       setTimeout(() => {
-        assert.equal($('.count').text(), 6);
+        assert.equal(container.find('.count').text(), 6);
 
-
-        $('.test').remove();
+        container.remove();
         done();
       }, 100);
     }, 100);
@@ -80,7 +88,7 @@ describe('restarting a cycle app', () => {
 
 describe('restarting a cycle app with multiple streams', () => {
   it('works', (done) => {
-    makeTestContainer();
+    const {container, selector} = makeTestContainer();
 
     function main ({DOM}) {
       const add$ = DOM
@@ -109,30 +117,30 @@ describe('restarting a cycle app with multiple streams', () => {
     }
 
     const drivers = {
-      DOM: makeDOMDriver('.test')
-    }
+      DOM: makeDOMDriver(selector)
+    };
 
-    const {sinks, sources} = run(main, drivers);
+    const {sources} = run(main, drivers);
 
     setTimeout(() => {
-      $('.add').click();
-      $('.add').click();
-      $('.add').click();
+      container.find('.add').click();
+      container.find('.add').click();
+      container.find('.add').click();
 
-      assert.equal($('.count').text(), 3);
+      assert.equal(container.find('.count').text(), 3);
 
-      $('.subtract').click();
-      $('.subtract').click();
-      $('.subtract').click();
+      container.find('.subtract').click();
+      container.find('.subtract').click();
+      container.find('.subtract').click();
 
-      assert.equal($('.count').text(), 0);
+      assert.equal(container.find('.count').text(), 0);
 
       restart(main, sources, drivers);
 
       setTimeout(() => {
-        assert.equal($('.count').text(), 0);
+        assert.equal(container.find('.count').text(), 0);
 
-        $('.test').remove();
+        container.remove();
         done();
       }, 100);
     }, 100);
