@@ -22,44 +22,44 @@ function makeTestContainer () {
 }
 
 describe('restarting a cycle app', () => {
+  function main ({DOM}) {
+    const count$ = DOM
+      .select('.add')
+      .events('click')
+      .map(_ => 1)
+      .scan((total, change) => total + change)
+      .startWith(0);
+
+    return {
+      DOM: count$.map(count =>
+        div('.app', [
+          div('.count', count.toString()),
+          button('.add', '+')
+        ])
+      )
+    };
+  }
+
+  function newMain ({DOM}) {
+    const count$ = DOM
+      .select('.add')
+      .events('click')
+      .map(_ => 2)
+      .scan((total, change) => total + change)
+      .startWith(0);
+
+    return {
+      DOM: count$.map(count =>
+        div('.app', [
+          div('.count', count.toString()),
+          button('.add', '+')
+        ])
+      )
+    };
+  }
+
   it('is possible', (done) => {
     const {container, selector} = makeTestContainer();
-
-    function main ({DOM}) {
-      const count$ = DOM
-        .select('.add')
-        .events('click')
-        .map(_ => 1)
-        .scan((total, change) => total + change)
-        .startWith(0);
-
-      return {
-        DOM: count$.map(count =>
-          div('.app', [
-            div('.count', count.toString()),
-            button('.add', '+')
-          ])
-        )
-      };
-    }
-
-    function newMain ({DOM}) {
-      const count$ = DOM
-        .select('.add')
-        .events('click')
-        .map(_ => 2)
-        .scan((total, change) => total + change)
-        .startWith(0);
-
-      return {
-        DOM: count$.map(count =>
-          div('.app', [
-            div('.count', count.toString()),
-            button('.add', '+')
-          ])
-        )
-      };
-    }
 
     const drivers = {
       DOM: makeDOMDriver(selector)
@@ -81,8 +81,49 @@ describe('restarting a cycle app', () => {
 
         container.remove();
         done();
-      }, 100);
-    }, 100);
+      }, 30);
+    }, 30);
+  });
+
+  it('handles multiple restarts', (done) => {
+    const {container, selector} = makeTestContainer();
+
+    const drivers = {
+      DOM: makeDOMDriver(selector)
+    };
+
+    const {sources} = run(main, drivers);
+
+    assert.equal(container.find('.count').text(), 0);
+
+    setTimeout(() => {
+      container.find('.add').click();
+      container.find('.add').click();
+      container.find('.add').click();
+
+      assert.equal(container.find('.count').text(), 3);
+
+      restart(main, sources, drivers);
+
+      setTimeout(() => {
+        assert.equal(container.find('.count').text(), 3);
+
+        container.find('.add').click();
+        container.find('.add').click();
+        container.find('.add').click();
+
+        assert.equal(container.find('.count').text(), 6);
+
+        restart(main, sources, drivers);
+
+        setTimeout(() => {
+          assert.equal(container.find('.count').text(), 6);
+
+          container.remove();
+          done();
+        }, 30);
+      }, 30);
+    }, 30);
   });
 });
 
@@ -142,7 +183,7 @@ describe('restarting a cycle app with multiple streams', () => {
 
         container.remove();
         done();
-      }, 100);
-    }, 100);
+      }, 30);
+    }, 30);
   });
 });
