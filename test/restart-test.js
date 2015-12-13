@@ -81,8 +81,8 @@ describe('restarting a cycle app', () => {
 
         container.remove();
         done();
-      }, 30);
-    }, 30);
+      });
+    });
   });
 
   it('handles multiple restarts', (done) => {
@@ -121,9 +121,9 @@ describe('restarting a cycle app', () => {
 
           container.remove();
           done();
-        }, 30);
-      }, 30);
-    }, 30);
+        });
+      });
+    });
   });
 });
 
@@ -183,7 +183,7 @@ describe('restarting a cycle app with multiple streams', () => {
 
         container.remove();
         done();
-      }, 30);
-    }, 30);
+      });
+    });
   });
 });

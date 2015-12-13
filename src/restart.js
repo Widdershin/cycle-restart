@@ -14,5 +14,5 @@ export default function restart (main, sources, drivers) {
         driver.replayHistory(history);
       }
     }
-  }, 10);
+  });
 }
