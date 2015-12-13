@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "mochify --transform babelify" ,
+    "test": "mochify --transform babelify",
     "autotest": "mochify --watch --transform babelify",
     "precompile-lib": "rm -rf lib/ && mkdir -p lib",
     "compile-lib": "babel src -d lib",
@@ -41,7 +41,7 @@
     "browserify": "^12.0.1",
     "jquery": "^2.1.4",
     "mocha": "^2.3.4",
-    "mochify": "^2.14.2",
+    "mochify": "^2.14.3",
     "rx": "^4.0.7"
   }
 }
