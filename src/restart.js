@@ -8,7 +8,7 @@ export default function restart (main, sources, drivers) {
   setTimeout(() => {
     for (let driverName in drivers) {
       const driver = drivers[driverName];
-      const history = sources[driverName].history()
+      const history = sources[driverName].history();
 
       if (driver.replayHistory) {
         driver.replayHistory(history);
