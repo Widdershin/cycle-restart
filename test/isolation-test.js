@@ -24,7 +24,7 @@ function makeTestContainer () {
 }
 
 describe('scoped components', () => {
-  xit('works', (done) => {
+  it('works', (done) => {
     let counterN = 0;
     function Counter ({DOM}) {
       let count = 0 + counterN;
@@ -32,7 +32,6 @@ describe('scoped components', () => {
       const add$ = DOM
         .select('.add')
         .events('click')
-        .do(_ => console.log(count))
         .map(_ => 1);
 
       const subtract$ = DOM
@@ -90,16 +89,22 @@ describe('scoped components', () => {
 
       assert.equal(container.text(), '3+-0+-');
 
-      container.find('.subtract').click();
-      container.find('.subtract').click();
-      container.find('.subtract').click();
+      container.find('.subtract')[0].click();
+      container.find('.subtract')[0].click();
+      container.find('.subtract')[0].click();
 
-      assert.equal(container.find('.count').text(), 0);
+      assert.equal(container.text(), '0+-0+-');
 
       restart(main, sources, drivers);
 
       setTimeout(() => {
         assert.equal(container.find('.count').text(), 0);
+
+        container.find('.add')[1].click();
+        container.find('.add')[1].click();
+        container.find('.add')[1].click();
+
+        assert.equal(container.text(), '0+-3+-');
 
         container.remove();
         done();
