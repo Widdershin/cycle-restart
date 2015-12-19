@@ -83,28 +83,22 @@ describe('scoped components', () => {
     const {sources} = run(main, drivers);
 
     setTimeout(() => {
-      container.find('.add')[0].click();
-      container.find('.add')[0].click();
-      container.find('.add')[0].click();
+      container.find('.add')[1].click();
+      container.find('.add')[1].click();
+      container.find('.add')[1].click();
 
-      assert.equal(container.text(), '3+-0+-');
-
-      container.find('.subtract')[0].click();
-      container.find('.subtract')[0].click();
-      container.find('.subtract')[0].click();
-
-      assert.equal(container.text(), '0+-0+-');
+      assert.equal(container.text(), '0+-3+-');
 
       restart(main, sources, drivers);
 
       setTimeout(() => {
-        assert.equal(container.find('.count').text(), 0);
-
-        container.find('.add')[1].click();
-        container.find('.add')[1].click();
-        container.find('.add')[1].click();
-
         assert.equal(container.text(), '0+-3+-');
+
+        container.find('.add')[1].click();
+        container.find('.add')[1].click();
+        container.find('.add')[1].click();
+
+        assert.equal(container.text(), '0+-6+-');
 
         container.remove();
         done();
