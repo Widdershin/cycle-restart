@@ -1,7 +1,11 @@
 import {run} from '@cycle/core';
 
-export default function restart (main, sources, drivers) {
+export default function restart (main, sources, drivers, isolate={}) {
   sources.dispose();
+
+  if ('reset' in isolate) {
+    isolate.reset();
+  }
 
   run(main, drivers);
 

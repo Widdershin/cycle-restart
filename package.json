@@ -44,8 +44,5 @@
     "mocha": "^2.3.4",
     "mochify": "^2.14.3",
     "rx": "^4.0.7"
-  },
-  "dependencies": {
-    "@cycle/isolate": "^1.1.1"
   }
 }

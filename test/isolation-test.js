@@ -89,7 +89,7 @@ describe('scoped components', () => {
 
       assert.equal(container.text(), '0+-3+-');
 
-      restart(main, sources, drivers);
+      restart(main, sources, drivers, isolate);
 
       setTimeout(() => {
         assert.equal(container.text(), '0+-3+-');
