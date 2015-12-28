@@ -25,10 +25,7 @@ function makeTestContainer () {
 
 describe('scoped components', () => {
   it('works', (done) => {
-    let counterN = 0;
     function Counter ({DOM}) {
-      let count = 0 + counterN;
-
       const add$ = DOM
         .select('.add')
         .events('click')
@@ -42,8 +39,6 @@ describe('scoped components', () => {
       const count$ = add$.merge(subtract$)
         .scan((total, change) => total + change)
         .startWith(0);
-
-      counterN++;
 
       return {
         DOM: count$.map(count =>
