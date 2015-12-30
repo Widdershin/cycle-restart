@@ -1,6 +1,6 @@
 import {run} from '@cycle/core';
 
-export default function restart (main, sources, drivers, isolate={}) {
+export default function restart (main, sources, drivers, isolate = {}) {
   sources.dispose();
 
   if ('reset' in isolate) {
