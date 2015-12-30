@@ -12,9 +12,10 @@ export default function restart (main, sources, drivers, isolate = {}) {
   setTimeout(() => {
     for (let driverName in drivers) {
       const driver = drivers[driverName];
-      const history = sources[driverName].history();
 
-      if (driver.replayHistory) {
+      if (driver.history) {
+        const history = sources[driverName].history();
+
         driver.replayHistory(history);
       }
     }
