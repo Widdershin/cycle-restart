@@ -37,7 +37,7 @@
   "devDependencies": {
     "@cycle/core": "^6.0.0-rc2",
     "@cycle/dom": "Widdershin/cycle-dom#history-api",
-    "@cycle/http": "^7.0.0",
+    "@cycle/http": "Widdershin/cycle-http-driver#restart-support",
     "@cycle/isolate": "^1.2.0",
     "babel-cli": "^6.3.15",
     "babel-core": "^6.3.15",

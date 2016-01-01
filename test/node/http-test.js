@@ -44,12 +44,18 @@ describe('restarting a cycle app that makes http requests', () => {
     const {sources} = run(main, drivers);
 
     setTimeout(() => {
-      assert.equal(requestCount, 1);
+      assert.equal(
+        requestCount, 1,
+        `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
+      );
 
       restart(main, sources, drivers);
 
       setTimeout(() => {
-        assert.equal(requestCount, 1);
+        assert.equal(
+          requestCount, 1,
+          `Expected requestCount to be 1 after restart, was ${requestCount}.`
+        );
 
         done();
       }, 50);

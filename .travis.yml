@@ -5,4 +5,4 @@ node_js:
   - "4.2"
 
 install:
-  - npm install && cd node_modules/@cycle/dom && npm run compile-lib && cd ../../..
+  - npm install && cd node_modules/@cycle/dom && npm run compile-lib && cd ../../.. cd node_modules/@cycle/http && npm run compile-lib && cd ../../..
