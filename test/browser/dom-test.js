@@ -3,7 +3,7 @@ import assert from 'assert';
 import {run} from '@cycle/core';
 import {makeDOMDriver, div, button} from '@cycle/dom';
 
-import restart from '../src/restart';
+import restart from '../../src/restart';
 
 import {Observable} from 'rx';
 

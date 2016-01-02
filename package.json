@@ -8,8 +8,11 @@
     "test": "test"
   },
   "scripts": {
-    "test": "mochify --transform babelify",
-    "autotest": "mochify --watch --transform babelify",
+    "test": "npm run test-node && npm run test-browser",
+    "test-node": "mocha --compilers js:babel-core/register test/node/*",
+    "autotest-node": "mocha --compilers js:babel-core/register --watch test/node/*",
+    "test-browser": "mochify --transform babelify test/browser/*",
+    "autotest-browser": "mochify --watch --transform babelify test/browser/*",
     "precompile-lib": "rm -rf lib/ && mkdir -p lib",
     "compile-lib": "babel src -d lib",
     "prepublish": "npm run compile-lib"
@@ -34,6 +37,7 @@
   "devDependencies": {
     "@cycle/core": "^6.0.0-rc2",
     "@cycle/dom": "Widdershin/cycle-dom#history-api",
+    "@cycle/http": "Widdershin/cycle-http-driver#restart-support",
     "@cycle/isolate": "^1.2.0",
     "babel-cli": "^6.3.15",
     "babel-core": "^6.3.15",

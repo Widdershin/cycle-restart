@@ -7,16 +7,27 @@ export default function restart (main, sources, drivers, isolate = {}) {
     isolate.reset();
   }
 
-  run(main, drivers);
+  for (let driverName in drivers) {
+    const driver = drivers[driverName];
+
+    if (driver.aboutToReplay) {
+      driver.aboutToReplay();
+    }
+  }
+
+  const newSourcesAndSinks = run(main, drivers);
 
   setTimeout(() => {
     for (let driverName in drivers) {
       const driver = drivers[driverName];
-      const history = sources[driverName].history();
 
       if (driver.replayHistory) {
+        const history = sources[driverName].history();
+
         driver.replayHistory(history);
       }
     }
   });
+
+  return newSourcesAndSinks;
 }
