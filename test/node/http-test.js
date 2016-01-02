@@ -15,7 +15,7 @@ const server = http.createServer(function (req, res) {
   requestCount += 1;
 
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Hello, world!');
+  res.end('Hello, world! - ' + requestCount);
 });
 
 const PORT = 8532;
@@ -25,18 +25,17 @@ describe('restarting a cycle app that makes http requests', () => {
   after(() => server.close());
 
   function main ({HTTP}) {
-    HTTP.mergeAll().subscribe(foo =>
-      assert.strictEqual(foo.text, 'Hello, world!')
-    );
+    const responses$ = HTTP.mergeAll().map(res => res.text);
 
     return {
-      HTTP: Observable.just('localhost:8532/a')
+      HTTP: Observable.just('localhost:8532/a'),
+      responses$: responses$
     };
   }
 
   it('only makes requests the first time', (done) => {
     const drivers = {
-      HTTP: makeHTTPDriver()
+      HTTP: makeHTTPDriver({eager: true})
     };
 
     assert.equal(requestCount, 0);
@@ -59,6 +58,41 @@ describe('restarting a cycle app that makes http requests', () => {
 
         done();
       }, 50);
+    }, 50);
+  });
+
+  it('replays responses', (done) => {
+    requestCount = 0;
+
+    const drivers = {
+      HTTP: makeHTTPDriver()
+    };
+
+    assert.equal(requestCount, 0);
+
+    const {sources, sinks} = run(main, drivers);
+
+    setTimeout(() => {
+      sinks.responses$.take(1).subscribe(text => {
+        assert.equal(text, 'Hello, world! - 1');
+
+        assert.equal(
+          requestCount, 1,
+          `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
+        );
+
+        const restartedSinks = restart(main, sources, drivers).sinks;
+
+        restartedSinks.responses$.take(1).subscribe(text => {
+          assert.equal(text, 'Hello, world! - 1');
+          assert.equal(
+            requestCount, 1,
+            `Expected requestCount to be 1 after restart, was ${requestCount}.`
+          );
+
+          done();
+        });
+      });
     }, 50);
   });
 });

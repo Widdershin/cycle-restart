@@ -15,7 +15,7 @@ export default function restart (main, sources, drivers, isolate = {}) {
     }
   }
 
-  run(main, drivers);
+  const newSourcesAndSinks = run(main, drivers);
 
   setTimeout(() => {
     for (let driverName in drivers) {
@@ -28,4 +28,6 @@ export default function restart (main, sources, drivers, isolate = {}) {
       }
     }
   });
+
+  return newSourcesAndSinks;
 }
