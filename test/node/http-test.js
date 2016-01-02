@@ -1,4 +1,4 @@
-/* globals describe, it */
+/* globals describe, it, before, after */
 import assert from 'assert';
 import {run} from '@cycle/core';
 import {makeHTTPDriver} from '@cycle/http';
