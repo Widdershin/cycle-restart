@@ -10,7 +10,7 @@ export default function restart (main, sources, drivers, isolate = {}) {
   for (let driverName in drivers) {
     const driver = drivers[driverName];
 
-    if (driver.replayHistory) {
+    if (driver.aboutToReplay) {
       driver.aboutToReplay();
     }
   }
