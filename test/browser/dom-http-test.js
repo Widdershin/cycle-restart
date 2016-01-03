@@ -4,7 +4,7 @@ import assert from 'assert';
 import {run} from '@cycle/core';
 import {button, makeDOMDriver} from '@cycle/dom';
 
-const request = require('superagent');
+const request = require('../../node_modules/@cycle/http/node_modules/superagent');
 
 let requestCount = 0;
 
