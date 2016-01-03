@@ -75,7 +75,7 @@ describe('restarting a cycle app', () => {
 
       assert.equal(container.find('.count').text(), 3);
 
-      restart(newMain, sources, drivers);
+      restart(newMain, drivers, {sources});
 
       setTimeout(() => {
         assert.equal(container.find('.count').text(), 6);
@@ -104,7 +104,7 @@ describe('restarting a cycle app', () => {
 
       assert.equal(container.find('.count').text(), 3);
 
-      restart(main, sources, drivers);
+      restart(main, drivers, {sources});
 
       setTimeout(() => {
         assert.equal(container.find('.count').text(), 3);
@@ -115,7 +115,7 @@ describe('restarting a cycle app', () => {
 
         assert.equal(container.find('.count').text(), 6);
 
-        restart(main, sources, drivers);
+        restart(main, drivers, {sources});
 
         setTimeout(() => {
           assert.equal(container.find('.count').text(), 6);
@@ -177,7 +177,7 @@ describe('restarting a cycle app with multiple streams', () => {
 
       assert.equal(container.find('.count').text(), 0);
 
-      restart(main, sources, drivers);
+      restart(main, drivers, {sources});
 
       setTimeout(() => {
         assert.equal(container.find('.count').text(), 0);

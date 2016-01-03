@@ -1,7 +1,8 @@
 import {run} from '@cycle/core';
 
-export default function restart (main, sources, drivers, isolate = {}) {
+export default function restart (main, drivers, {sources, sinks}, isolate = {}) {
   sources.dispose();
+  sinks && sinks.dispose();
 
   if ('reset' in isolate) {
     isolate.reset();
@@ -25,6 +26,14 @@ export default function restart (main, sources, drivers, isolate = {}) {
         const history = sources[driverName].history();
 
         driver.replayHistory(history);
+      }
+    }
+
+    for (let driverName in drivers) {
+      const driver = drivers[driverName];
+
+      if (driver.replayFinished) {
+        driver.replayFinished();
       }
     }
   });
