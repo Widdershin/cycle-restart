@@ -48,7 +48,7 @@ describe('restarting a cycle app that makes http requests', () => {
         `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
       );
 
-      restart(main, sources, drivers);
+      restart(main, drivers, {sources});
 
       setTimeout(() => {
         assert.equal(
@@ -81,7 +81,7 @@ describe('restarting a cycle app that makes http requests', () => {
           `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
         );
 
-        const restartedSinks = restart(main, sources, drivers).sinks;
+        const restartedSinks = restart(main, drivers, {sources}).sinks;
 
         restartedSinks.responses$.take(1).subscribe(text => {
           assert.equal(text, 'Hello, world! - 1');

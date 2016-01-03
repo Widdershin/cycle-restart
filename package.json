@@ -48,6 +48,7 @@
     "jquery": "^2.1.4",
     "mocha": "^2.3.4",
     "mochify": "^2.14.3",
-    "rx": "^4.0.7"
+    "rx": "^4.0.7",
+    "superagent-mock": "git://github.com/Widdershin/superagent-mock"
   }
 }
