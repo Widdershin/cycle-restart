@@ -2,18 +2,34 @@
 /* globals describe, it, before, after */
 import assert from 'assert';
 import {run} from '@cycle/core';
-import {button, makeDOMDriver} from '@cycle/dom';
+import {button, div, input, a, makeDOMDriver} from '@cycle/dom';
 
 const request = require('../../node_modules/@cycle/http/node_modules/superagent');
 
 let requestCount = 0;
+let wikiRequest = 0;
 
 const config = [
   {
-    pattern: '/',
+    pattern: '/(boo)',
 
     fixtures: function (match, params, headers) {
-      return 'Hello, world! - ' + ++requestCount;
+      requestCount += 1;
+
+      return 'Hello, world! - ' + match[1];
+    },
+
+    get: function (match, data) {
+      return {text: data};
+    }
+  },
+  {
+    pattern: '/wikipedia/(.*)',
+
+    fixtures: function (match, params, headers) {
+      requestCount += 1;
+
+      return {items: [{full_name: match[1], stargazers_count: 10}]};
     },
 
     get: function (match, data) {
@@ -52,7 +68,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
 
     return {
       DOM: Observable.just(button('.click', 'Click me!')),
-      HTTP: click$.map(_ => '/'),
+      HTTP: click$.map(_ => '/boo'),
       responses$
     };
   }
@@ -76,7 +92,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
 
       sinks.responses$.take(1).subscribe(text => {
         responseText = text;
-        assert.equal(text, 'Hello, world! - 1');
+        assert.equal(text, 'Hello, world! - boo');
 
         assert.equal(
           requestCount, 1,
@@ -86,7 +102,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
         const restartedSinks = restart(main, drivers, {sources}).sinks;
 
         restartedSinks.responses$.take(1).subscribe(text => {
-          assert.equal(text, 'Hello, world! - 1');
+          assert.equal(text, responseText);
           assert.equal(
             requestCount, 1,
             `Expected requestCount to be 1 after restart, was ${requestCount}.`
@@ -97,4 +113,92 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
       });
     }, 50);
   });
+
+  it('handles more complex apps', (done) => {
+    const {container, selector} = makeTestContainer();
+
+    const drivers = {
+      HTTP: makeHTTPDriver({eager: true}),
+      DOM: makeDOMDriver(selector)
+    };
+
+    requestCount = 0;
+    assert.equal(requestCount, 0);
+
+    const {sources, sinks} = run(WikipediaSearchBox, drivers);
+
+    setTimeout(() => {
+      container.find('.search').click()
+      let responseText;
+
+      sinks.results$.skip(1).take(1).subscribe(data => {
+        assert.equal(data.items[0].full_name, 'woah');
+
+        assert.equal(
+          requestCount, 1,
+          `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
+        );
+
+        const restartedSinks = restart(WikipediaSearchBox, drivers, {sources, sinks}).sinks;
+
+        restartedSinks.results$.skip(1).take(1).subscribe(newData => {
+          assert.equal(newData.items[0].full_name, 'woah');
+
+          assert.equal(
+            requestCount, 1,
+            `Expected requestCount to be 1 after restart, was ${requestCount}.`
+          );
+
+          done();
+        });
+      });
+    });
+  });
 });
+
+function searchWikipedia (term) {
+  return `/wikipedia/${term}`;
+}
+
+function sortedByStars (results) {
+  return results
+    .sort((result, result2) => parseInt(result2.stargazers_count, 10) - parseInt(result.stargazers_count, 10));
+}
+
+function WikipediaSearchBox ({DOM, HTTP}) {
+  const results$ = HTTP
+    .mergeAll()
+    .pluck('text')
+    .startWith({items: []});
+
+  const searchTerm$ = DOM
+    .select('.search')
+    .events('click')
+    .debounce(100)
+    .map(ev => 'woah')
+
+  return {
+    DOM: results$.map(results =>
+      div('.search-box', [
+        button('.search', 'Search'),
+        div('.results', sortedByStars(results.items).map(renderResult))
+      ])
+    ),
+
+    HTTP: searchTerm$.map(searchWikipedia),
+
+    results$
+  };
+}
+
+function renderResult (result) {
+  return (
+    div('.result', [
+      div('.result-name', [
+        a({href: `https://github.com/${result.full_name}`}, result.full_name),
+        ` - ${result.stargazers_count} ★`
+      ]),
+      div('.result-description', {style: {'margin-bottom': '5px'}}, `${result.description}`)
+    ])
+  );
+}
