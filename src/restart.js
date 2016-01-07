@@ -1,4 +1,5 @@
 import {run} from '@cycle/core';
+import Rx from 'rx';
 
 export default function restart (main, drivers, {sources, sinks}, isolate = {}) {
   sources.dispose();
@@ -19,23 +20,29 @@ export default function restart (main, drivers, {sources, sinks}, isolate = {}) 
   const newSourcesAndSinks = run(main, drivers);
 
   setTimeout(() => {
+    const scheduler = new Rx.HistoricalScheduler();
+
     for (let driverName in drivers) {
       const driver = drivers[driverName];
 
       if (driver.replayHistory) {
         const history = sources[driverName].history();
 
-        driver.replayHistory(history);
+        driver.replayHistory(scheduler, history);
       }
     }
 
-    for (let driverName in drivers) {
-      const driver = drivers[driverName];
+    scheduler.scheduleAbsolute({}, new Date(), () => {
+      for (let driverName in drivers) {
+        const driver = drivers[driverName];
 
-      if (driver.replayFinished) {
-        driver.replayFinished();
+        if (driver.replayFinished) {
+          driver.replayFinished();
+        }
       }
-    }
+    });
+
+    scheduler.start();
   });
 
   return newSourcesAndSinks;

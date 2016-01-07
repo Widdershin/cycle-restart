@@ -27,7 +27,7 @@ const config = [
     pattern: '/wikipedia/(.*)',
 
     fixtures: function (match, params, headers) {
-      requestCount += 1;
+      wikiRequest += 1;
 
       return {items: [{full_name: match[1], stargazers_count: 10}]};
     },
@@ -99,7 +99,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
           `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
         );
 
-        const restartedSinks = restart(main, drivers, {sources}).sinks;
+        const restartedSinks = restart(main, drivers, {sources, sinks}).sinks;
 
         restartedSinks.responses$.take(1).subscribe(text => {
           assert.equal(text, responseText);
@@ -135,8 +135,8 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
         assert.equal(data.items[0].full_name, 'woah');
 
         assert.equal(
-          requestCount, 1,
-          `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
+          wikiRequest, 1,
+          `Expected requestCount to be 1 prior to restart, was ${wikiRequest}.`
         );
 
         const restartedSinks = restart(WikipediaSearchBox, drivers, {sources, sinks}).sinks;
@@ -145,8 +145,8 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
           assert.equal(newData.items[0].full_name, 'woah');
 
           assert.equal(
-            requestCount, 1,
-            `Expected requestCount to be 1 after restart, was ${requestCount}.`
+            wikiRequest, 1,
+            `Expected requestCount to be 1 after restart, was ${wikiRequest}.`
           );
 
           done();
@@ -169,7 +169,7 @@ function WikipediaSearchBox ({DOM, HTTP}) {
   const results$ = HTTP
     .mergeAll()
     .pluck('text')
-    .startWith({items: []});
+    .startWith({items: []})
 
   const searchTerm$ = DOM
     .select('.search')
