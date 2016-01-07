@@ -154,6 +154,62 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
       });
     });
   });
+
+  it('allows making requests again after restart', (done) => {
+
+    wikiRequest = 0;
+    const {container, selector} = makeTestContainer();
+
+    const drivers = {
+      HTTP: makeHTTPDriver({eager: true}),
+      DOM: makeDOMDriver(selector)
+    };
+
+    requestCount = 0;
+    assert.equal(requestCount, 0);
+
+    const {sources, sinks} = run(WikipediaSearchBox, drivers);
+
+    setTimeout(() => {
+      container.find('.search').click()
+      let responseText;
+
+      sinks.results$.skip(1).take(1).subscribe(data => {
+        assert.equal(data.items[0].full_name, 'woah');
+
+        assert.equal(
+          wikiRequest, 2,
+          `Expected requestCount to be 2 prior to restart, was ${wikiRequest}.`
+        );
+
+
+        const restartedSinks = restart(WikipediaSearchBox, drivers, {sources, sinks}).sinks;
+
+        restartedSinks.results$.skip(1).take(1).subscribe(newData => {
+          assert.equal(newData.items[0].full_name, 'woah');
+
+          assert.equal(
+            wikiRequest, 2,
+            `Expected requestCount to be 2 after restart, was ${wikiRequest}.`
+          );
+
+          setTimeout(() => {
+            container.find('.search').click();
+
+            restartedSinks.results$.skip(2).take(1).subscribe(newData => {
+
+              assert.equal(
+                wikiRequest, 3,
+                `Expected requestCount to be 3 after restart, was ${wikiRequest}.`
+              );
+
+              done();
+            })
+          });
+        });
+      });
+    });
+  });
 });
 
 function searchWikipedia (term) {
