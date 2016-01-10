@@ -33,13 +33,16 @@ export default function restart (main, drivers, {sources, sinks}, isolate = {}) 
     }
 
     scheduler.scheduleAbsolute({}, new Date(), () => {
-      for (let driverName in drivers) {
-        const driver = drivers[driverName];
+      // TODO - remove this setTimeout, figure out how to tell when an async app is booted
+      setTimeout(() => {
+        for (let driverName in drivers) {
+          const driver = drivers[driverName];
 
-        if (driver.replayFinished) {
-          driver.replayFinished();
+          if (driver.replayFinished) {
+            driver.replayFinished();
+          }
         }
-      }
+      }, 500);
     });
 
     scheduler.start();
