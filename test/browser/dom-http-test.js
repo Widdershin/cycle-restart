@@ -178,8 +178,8 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
         assert.equal(data.items[0].full_name, 'woah');
 
         assert.equal(
-          wikiRequest, 2,
-          `Expected requestCount to be 2 prior to restart, was ${wikiRequest}.`
+          wikiRequest, 1,
+          `Expected requestCount to be 1 prior to restart, was ${wikiRequest}.`
         );
 
 
@@ -189,8 +189,8 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
           assert.equal(newData.items[0].full_name, 'woah');
 
           assert.equal(
-            wikiRequest, 2,
-            `Expected requestCount to be 2 after restart, was ${wikiRequest}.`
+            wikiRequest, 1,
+            `Expected requestCount to be 1 after restart, was ${wikiRequest}.`
           );
 
           setTimeout(() => {
@@ -199,13 +199,13 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
             restartedSinks.results$.skip(2).take(1).subscribe(newData => {
 
               assert.equal(
-                wikiRequest, 3,
-                `Expected requestCount to be 3 after restart, was ${wikiRequest}.`
+                wikiRequest, 2,
+                `Expected requestCount to be 2 after more events performed post restart, was ${wikiRequest}.`
               );
 
               done();
             })
-          });
+          }, 500);
         });
       });
     });
