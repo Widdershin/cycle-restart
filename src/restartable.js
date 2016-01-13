@@ -1,4 +1,4 @@
-import {Observable, Subject} from 'rx';
+import {Observable, ReplaySubject} from 'rx';
 
 export default function restartable (driver) {
   const log = [];
@@ -9,11 +9,12 @@ export default function restartable (driver) {
   function restartableDriver (sink$) {
     const source = driver(sink$.do(console.log.bind(console, 'request')).filter(_ => !replaying));
 
-    source$ = new Subject();
+    source$ = new ReplaySubject(1);
 
     if (typeof source.subscribe === 'function') {
       source.subscribe(event => {
         const loggedEvent$ = event.do(response => {
+          console.log(response, 'potato!');
           log.push({event: Observable.just(response), time: new Date()});
         })
 

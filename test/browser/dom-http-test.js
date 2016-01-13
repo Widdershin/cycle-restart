@@ -43,6 +43,7 @@ const superagentMock = require('superagent-mock')(request, config);
 import {makeHTTPDriver} from '@cycle/http';
 
 import restart from '../../src/restart';
+import restartable from '../../src/restartable';
 
 import {Observable} from 'rx';
 
@@ -77,7 +78,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
     const {container, selector} = makeTestContainer();
 
     const drivers = {
-      HTTP: makeHTTPDriver({eager: true}),
+      HTTP: restartable(makeHTTPDriver({eager: true})),
       DOM: makeDOMDriver(selector)
     };
 
@@ -118,7 +119,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
     const {container, selector} = makeTestContainer();
 
     const drivers = {
-      HTTP: makeHTTPDriver({eager: true}),
+      HTTP: restartable(makeHTTPDriver({eager: true})),
       DOM: makeDOMDriver(selector)
     };
 
@@ -156,12 +157,11 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
   });
 
   it('allows making requests again after restart', (done) => {
-
     wikiRequest = 0;
     const {container, selector} = makeTestContainer();
 
     const drivers = {
-      HTTP: makeHTTPDriver({eager: true}),
+      HTTP: restartable(makeHTTPDriver({eager: true})),
       DOM: makeDOMDriver(selector)
     };
 
