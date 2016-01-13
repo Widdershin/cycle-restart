@@ -6,6 +6,7 @@ import {makeHTTPDriver} from '@cycle/http';
 const http = require('http');
 
 import restart from '../../src/restart';
+import restartable from '../../src/restartable';
 
 import {Observable} from 'rx';
 
@@ -35,7 +36,7 @@ describe('restarting a cycle app that makes http requests', () => {
 
   it('only makes requests the first time', (done) => {
     const drivers = {
-      HTTP: makeHTTPDriver({eager: true})
+      HTTP: restartable(makeHTTPDriver({eager: true}))
     };
 
     assert.equal(requestCount, 0);
@@ -65,34 +66,33 @@ describe('restarting a cycle app that makes http requests', () => {
     requestCount = 0;
 
     const drivers = {
-      HTTP: makeHTTPDriver()
+      HTTP: restartable(makeHTTPDriver())
     };
 
     assert.equal(requestCount, 0);
 
     const {sources, sinks} = run(main, drivers);
 
-    setTimeout(() => {
-      sinks.responses$.take(1).subscribe(text => {
-        assert.equal(text, 'Hello, world! - 1');
+    console.log(requestCount);
+    sinks.responses$.take(1).subscribe(text => {
+      assert.equal(text, 'Hello, world! - 1');
 
+      assert.equal(
+        requestCount, 1,
+        `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
+      );
+
+      const restartedSinks = restart(main, drivers, {sources, sinks}).sinks;
+
+      restartedSinks.responses$.take(1).subscribe(text => {
+        assert.equal(text, 'Hello, world! - 1');
         assert.equal(
           requestCount, 1,
-          `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
+          `Expected requestCount to be 1 after restart, was ${requestCount}.`
         );
 
-        const restartedSinks = restart(main, drivers, {sources}).sinks;
-
-        restartedSinks.responses$.take(1).subscribe(text => {
-          assert.equal(text, 'Hello, world! - 1');
-          assert.equal(
-            requestCount, 1,
-            `Expected requestCount to be 1 after restart, was ${requestCount}.`
-          );
-
-          done();
-        });
+        done();
       });
-    }, 50);
+    });
   });
 });
