@@ -36,7 +36,7 @@
   "homepage": "https://github.com/Widdershin/cycle-restart",
   "devDependencies": {
     "@cycle/core": "^6.0.0-rc2",
-    "@cycle/dom": "Widdershin/cycle-dom#history-api",
+    "@cycle/dom": "^9.0.1",
     "@cycle/http": "^7.0.0",
     "@cycle/isolate": "^1.2.0",
     "babel-cli": "^6.3.15",
