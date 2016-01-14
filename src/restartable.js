@@ -1,7 +1,6 @@
 import {Observable, ReplaySubject} from 'rx';
 
 function disposeAllStreams (streams) {
-  console.log('dispose all!');
   Object.keys(streams).forEach(key => {
     const value = streams[key];
 
@@ -122,7 +121,6 @@ export default function restartable (driver, opts={}) {
   }
 
   restartableDriver.aboutToReplay = function () {
-    console.log('starting replay');
     replaying = true;
   };
 
@@ -133,12 +131,10 @@ export default function restartable (driver, opts={}) {
       });
     }
 
-    console.log('and here we go!');
     log.forEach(scheduleEvent);
   };
 
   restartableDriver.replayFinished = function () {
-    console.log('done')
     replaying = false;
   };
 

@@ -73,7 +73,6 @@ describe('restarting a cycle app that makes http requests', () => {
 
     const {sources, sinks} = run(main, drivers);
 
-    console.log(requestCount);
     sinks.responses$.take(1).subscribe(text => {
       assert.equal(text, 'Hello, world! - 1');
 
