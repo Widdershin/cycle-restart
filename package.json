@@ -1,12 +1,9 @@
 {
   "name": "cycle-restart",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Restart a Cycle.js application and preserve state.",
   "main": "lib/restart",
-  "directories": {
-    "lib": "lib",
-    "test": "test"
-  },
+  "files": ["lib"],
   "scripts": {
     "test": "npm run test-node && npm run test-browser",
     "test-node": "mocha --compilers js:babel-core/register test/node/*",
