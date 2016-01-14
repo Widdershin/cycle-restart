@@ -10,6 +10,75 @@ function disposeAllStreams (streams) {
   });
 }
 
+function wrapSourceFunction ({streams, subscriptions, log}, name, f, context, scope = []) {
+  return function (...args) {
+    let newScope;
+
+    if (typeof args[0] === 'string') {
+      newScope = scope.concat([args[0]]);
+    }
+
+    const returnValue = f.bind(context, ...args)();
+
+    if (name.indexOf('isolate') !== -1) {
+      return returnValue;
+    }
+
+    if (typeof returnValue === 'object') {
+      if (typeof returnValue.subscribe === 'function') {
+        const ident = newScope.join('/');
+
+        if (streams[ident] === undefined) {
+          streams[ident] = new ReplaySubject();
+        }
+
+        const stream = streams[ident];
+
+        const subscription = returnValue.subscribe(event => {
+          log.push({event, time: new Date(), ident, stream});
+
+          stream.onNext(event);
+        });
+
+        subscriptions.push(subscription);
+
+        return stream;
+      }
+
+      return wrapSource({streams, subscriptions, log}, returnValue, newScope);
+    } else {
+      return returnValue;
+    }
+  };
+}
+
+function wrapSource ({streams, subscriptions, log}, source, scope=[]) {
+  const returnValue = {};
+
+  Object.keys(source).forEach(key => {
+    const value = source[key];
+
+    if (key === 'dispose') {
+      returnValue[key] = () => {
+        value();
+        disposeAllStreams(streams);
+        subscriptions.forEach(sub => sub.dispose());
+        subscriptions = [];
+      };
+    } else if (value === null) {
+      returnValue[key] = value;
+    } else if (typeof value.subscribe === 'function') {
+      returnValue[key] = value;
+    } else if (typeof value === 'function') {
+      returnValue[key] = wrapSourceFunction({streams, subscriptions, log}, key, value, returnValue, scope);
+    } else {
+      returnValue[key] = value;
+    }
+  });
+
+  return returnValue;
+}
+
 export default function restartable (driver, opts={}) {
   const log = [];
   const streams = {};
@@ -19,74 +88,7 @@ export default function restartable (driver, opts={}) {
 
   let replaying;
 
-  function wrapSource (source, scope=[]) {
-    const returnValue = {};
 
-    Object.keys(source).forEach(key => {
-      const value = source[key];
-
-      if (key === 'dispose') {
-        returnValue[key] = () => {
-          value();
-          disposeAllStreams(streams);
-          subscriptions.forEach(sub => sub.dispose());
-          subscriptions = [];
-        };
-      } else if (value === null) {
-        returnValue[key] = value;
-      } else if (typeof value.subscribe === 'function') {
-        returnValue[key] = value;
-      } else if (typeof value === 'function') {
-        returnValue[key] = wrapSourceFunction(key, value, returnValue, scope);
-      } else {
-        returnValue[key] = value;
-      }
-    });
-
-    return returnValue;
-  }
-
-  function wrapSourceFunction (name, f, context, scope = []) {
-    return function (...args) {
-      let newScope;
-
-      if (typeof args[0] === 'string') {
-        newScope = scope.concat([args[0]]);
-      }
-
-      const returnValue = f.bind(context, ...args)();
-
-      if (name.indexOf('isolate') !== -1) {
-        return returnValue;
-      }
-
-      if (typeof returnValue === 'object') {
-        if (typeof returnValue.subscribe === 'function') {
-          const ident = newScope.join('/');
-
-          if (streams[ident] === undefined) {
-            streams[ident] = new ReplaySubject();
-          }
-
-          const stream = streams[ident];
-
-          const subscription = returnValue.subscribe(event => {
-            log.push({event, time: new Date(), ident, stream});
-
-            stream.onNext(event);
-          });
-
-          subscriptions.push(subscription);
-
-          return stream;
-        }
-
-        return wrapSource(returnValue, newScope);
-      } else {
-        return returnValue;
-      }
-    };
-  }
 
   function restartableDriver (sink$) {
     let filteredSink$ = sink$;
@@ -112,7 +114,7 @@ export default function restartable (driver, opts={}) {
 
       returnValue = source$;
     } else {
-      returnValue = wrapSource(source);
+      returnValue = wrapSource({streams, subscriptions, log}, source);
     }
 
     returnValue.history = () => log;
