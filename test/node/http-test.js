@@ -5,8 +5,7 @@ import {makeHTTPDriver} from '@cycle/http';
 
 const http = require('http');
 
-import restart from '../../src/restart';
-import restartable from '../../src/restartable';
+import {restart, restartable} from '../../src/restart';
 
 import {Observable} from 'rx';
 

@@ -42,8 +42,7 @@ const superagentMock = require('superagent-mock')(request, config);
 
 import {makeHTTPDriver} from '@cycle/http';
 
-import restart from '../../src/restart';
-import restartable from '../../src/restartable';
+import {restart, restartable} from '../../src/restart';
 
 import {Observable} from 'rx';
 

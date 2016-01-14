@@ -1,7 +1,8 @@
 import {run} from '@cycle/core';
 import Rx from 'rx';
+import restartable from './restartable';
 
-export default function restart (main, drivers, {sources, sinks}, isolate = {}) {
+function restart (main, drivers, {sources, sinks}, isolate = {}) {
   sources.dispose();
   sinks && sinks.dispose();
 
@@ -49,4 +50,9 @@ export default function restart (main, drivers, {sources, sinks}, isolate = {}) 
   });
 
   return newSourcesAndSinks;
+}
+
+module.exports = {
+  restart,
+  restartable
 }
