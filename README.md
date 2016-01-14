@@ -17,7 +17,7 @@ import {restart, restartable} from 'cycle-restart';
 import app from './src/app';
 
 const drivers = {
-  DOM: restartable(makeDOMDriver('.app'), {pauseSinksWhileReplaying: true}),
+  DOM: restartable(makeDOMDriver('.app'), {pauseSinksWhileReplaying: false}),
   HTTP: restartable(makeHTTPDriver())
 };
 
