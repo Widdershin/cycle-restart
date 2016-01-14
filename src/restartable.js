@@ -10,6 +10,15 @@ function disposeAllStreams (streams) {
   });
 }
 
+function makeDispose ({streams, subscriptions}, originalDispose) {
+  return function dispose () {
+    originalDispose();
+    disposeAllStreams(streams);
+    subscriptions.forEach(sub => sub.dispose());
+    subscriptions = [];
+  }
+}
+
 function wrapSourceFunction ({streams, subscriptions, log}, name, f, context, scope = []) {
   return function (...args) {
     const newScope = scope.concat(args);
@@ -51,12 +60,7 @@ function wrapSource ({streams, subscriptions, log}, source, scope=[]) {
     const value = source[key];
 
     if (key === 'dispose') {
-      returnValue[key] = () => {
-        value();
-        disposeAllStreams(streams);
-        subscriptions.forEach(sub => sub.dispose());
-        subscriptions = [];
-      };
+      returnValue[key] = makeDispose({streams, subscriptions}, value);
     } else if (value === null) {
       returnValue[key] = value;
     } else if (typeof value.subscribe === 'function') {
