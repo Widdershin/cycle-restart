@@ -19,8 +19,26 @@ function makeDispose ({streams, subscriptions}, originalDispose) {
   }
 }
 
+function record ({streams, subscriptions, log}, streamToRecord, identifier) {
+  if (streams[identifier] === undefined) {
+    streams[identifier] = new ReplaySubject();
+  }
+
+  const stream = streams[identifier];
+
+  const subscription = streamToRecord.subscribe(event => {
+    log.push({event, time: new Date(), identifier, stream});
+
+    stream.onNext(event);
+  });
+
+  subscriptions.push(subscription);
+
+  return stream;
+}
+
 function wrapSourceFunction ({streams, subscriptions, log}, name, f, context, scope = []) {
-  return function (...args) {
+  return function newSource (...args) {
     const newScope = scope.concat(args);
 
     const returnValue = f.bind(context, ...args)();
@@ -33,23 +51,9 @@ function wrapSourceFunction ({streams, subscriptions, log}, name, f, context, sc
       return wrapSource({streams, subscriptions, log}, returnValue, newScope);
     }
 
-    const ident = newScope.join('/');
+    const identifier = newScope.join('/');
 
-    if (streams[ident] === undefined) {
-      streams[ident] = new ReplaySubject();
-    }
-
-    const stream = streams[ident];
-
-    const subscription = returnValue.subscribe(event => {
-      log.push({event, time: new Date(), ident, stream});
-
-      stream.onNext(event);
-    });
-
-    subscriptions.push(subscription);
-
-    return stream;
+    return record({streams, subscriptions, log}, returnValue, identifier);
   };
 }
 
@@ -96,7 +100,7 @@ export default function restartable (driver, opts = {}) {
     if (typeof source.subscribe === 'function') {
       source.subscribe(event => {
         const loggedEvent$ = event.do(response => {
-          log.push({event: Observable.just(response), time: new Date(), stream: source$, ident: ':root'});
+          log.push({event: Observable.just(response), time: new Date(), stream: source$, identifier: ':root'});
         });
 
         source$.onNext(loggedEvent$);
@@ -119,7 +123,7 @@ export default function restartable (driver, opts = {}) {
   restartableDriver.replayHistory = function (scheduler, newHistory) {
     function scheduleEvent (historicEvent) {
       scheduler.scheduleAbsolute({}, historicEvent.time, () => {
-        streams[historicEvent.ident].onNext(historicEvent.event);
+        streams[historicEvent.identifier].onNext(historicEvent.event);
       });
     }
 
