@@ -35,7 +35,6 @@
   },
   "homepage": "https://github.com/Widdershin/cycle-restart",
   "devDependencies": {
-    "@cycle/core": "^6.0.0-rc2",
     "@cycle/dom": "^9.0.1",
     "@cycle/http": "^7.0.0",
     "@cycle/isolate": "^1.2.0",
@@ -48,7 +47,10 @@
     "jquery": "^2.1.4",
     "mocha": "^2.3.4",
     "mochify": "^2.14.3",
-    "rx": "^4.0.7",
     "superagent-mock": "git://github.com/Widdershin/superagent-mock"
+  },
+  "dependencies": {
+    "@cycle/core": "^6.0.0-rc2",
+    "rx": "^4.0.7"
   }
 }
