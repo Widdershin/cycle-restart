@@ -3,7 +3,7 @@ import assert from 'assert';
 import {run} from '@cycle/core';
 import {makeDOMDriver, div, button} from '@cycle/dom';
 
-import restart from '../../src/restart';
+import {restart, restartable} from '../../src/restart';
 
 import {Observable} from 'rx';
 
@@ -63,10 +63,10 @@ describe('restarting a cycle app', () => {
     const {container, selector} = makeTestContainer();
 
     const drivers = {
-      DOM: makeDOMDriver(selector)
+      DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
     };
 
-    const {sources} = run(main, drivers);
+    const {sources, sinks} = run(main, drivers);
 
     setTimeout(() => {
       container.find('.add').click();
@@ -75,7 +75,7 @@ describe('restarting a cycle app', () => {
 
       assert.equal(container.find('.count').text(), 3);
 
-      restart(newMain, drivers, {sources});
+      restart(newMain, drivers, {sources, sinks});
 
       setTimeout(() => {
         assert.equal(container.find('.count').text(), 6);
@@ -90,10 +90,10 @@ describe('restarting a cycle app', () => {
     const {container, selector} = makeTestContainer();
 
     const drivers = {
-      DOM: makeDOMDriver(selector)
+      DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
     };
 
-    const {sources} = run(main, drivers);
+    let sourcesAndSinks = run(main, drivers);
 
     assert.equal(container.find('.count').text(), 0);
 
@@ -104,7 +104,7 @@ describe('restarting a cycle app', () => {
 
       assert.equal(container.find('.count').text(), 3);
 
-      restart(main, drivers, {sources});
+      sourcesAndSinks = restart(main, drivers, sourcesAndSinks);
 
       setTimeout(() => {
         assert.equal(container.find('.count').text(), 3);
@@ -115,7 +115,7 @@ describe('restarting a cycle app', () => {
 
         assert.equal(container.find('.count').text(), 6);
 
-        restart(main, drivers, {sources});
+        sourcesAndSinks = restart(main, drivers, sourcesAndSinks);
 
         setTimeout(() => {
           assert.equal(container.find('.count').text(), 6);
@@ -159,7 +159,7 @@ describe('restarting a cycle app with multiple streams', () => {
     }
 
     const drivers = {
-      DOM: makeDOMDriver(selector)
+      DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
     };
 
     const {sources} = run(main, drivers);
