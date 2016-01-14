@@ -1,5 +1,10 @@
 # cycle-restart
-Restart a Cycle.js application and preserve state. Designed for hot module reloading.
+Restart a Cycle.js application with new code and replay the user's events.
+
+Why?
+---
+
+So that you can use hot module reloading to change your code on the fly, and have the app act as if your new code had been running all along. The feedback loop is phenomenally short!
 
 How do I use it?
 ---
@@ -31,3 +36,8 @@ if (module.hot) {
   });
 }
 ```
+
+Limitations
+---
+
+Currently, `restartable` has only been tested with `@cycle/dom` and `@cycle/http`. The plan is to make it generic enough to work with any driver, so if you run into a driver that doesn't work correctly with `restartable`, please open an issue.
