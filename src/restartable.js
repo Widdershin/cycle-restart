@@ -12,43 +12,35 @@ function disposeAllStreams (streams) {
 
 function wrapSourceFunction ({streams, subscriptions, log}, name, f, context, scope = []) {
   return function (...args) {
-    let newScope;
-
-    if (typeof args[0] === 'string') {
-      newScope = scope.concat([args[0]]);
-    }
+    const newScope = scope.concat(args);
 
     const returnValue = f.bind(context, ...args)();
 
-    if (name.indexOf('isolate') !== -1) {
+    if (name.indexOf('isolate') !== -1 || typeof returnValue !== 'object') {
       return returnValue;
     }
 
-    if (typeof returnValue === 'object') {
-      if (typeof returnValue.subscribe === 'function') {
-        const ident = newScope.join('/');
-
-        if (streams[ident] === undefined) {
-          streams[ident] = new ReplaySubject();
-        }
-
-        const stream = streams[ident];
-
-        const subscription = returnValue.subscribe(event => {
-          log.push({event, time: new Date(), ident, stream});
-
-          stream.onNext(event);
-        });
-
-        subscriptions.push(subscription);
-
-        return stream;
-      }
-
+    if (typeof returnValue.subscribe !== 'function') {
       return wrapSource({streams, subscriptions, log}, returnValue, newScope);
-    } else {
-      return returnValue;
     }
+
+    const ident = newScope.join('/');
+
+    if (streams[ident] === undefined) {
+      streams[ident] = new ReplaySubject();
+    }
+
+    const stream = streams[ident];
+
+    const subscription = returnValue.subscribe(event => {
+      log.push({event, time: new Date(), ident, stream});
+
+      stream.onNext(event);
+    });
+
+    subscriptions.push(subscription);
+
+    return stream;
   };
 }
 
