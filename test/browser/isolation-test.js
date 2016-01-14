@@ -5,6 +5,7 @@ import {makeDOMDriver, div, button} from '@cycle/dom';
 import isolate from '@cycle/isolate';
 
 import restart from '../../src/restart';
+import restartable from '../../src/restartable';
 
 import {Observable} from 'rx';
 
@@ -72,10 +73,10 @@ describe('scoped components', () => {
     const {container, selector} = makeTestContainer();
 
     const drivers = {
-      DOM: makeDOMDriver(selector)
+      DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
     };
 
-    const {sources} = run(main, drivers);
+    const {sources, sinks} = run(main, drivers);
 
     setTimeout(() => {
       container.find('.add')[1].click();
@@ -84,7 +85,7 @@ describe('scoped components', () => {
 
       assert.equal(container.text(), '0+-3+-');
 
-      restart(main, drivers, {sources}, isolate);
+      restart(main, drivers, {sources, sinks}, isolate);
 
       setTimeout(() => {
         assert.equal(container.text(), '0+-3+-');

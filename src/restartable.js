@@ -14,6 +14,7 @@ function disposeAllStreams (streams) {
 export default function restartable (driver, opts={}) {
   const log = [];
   const streams = {};
+  let subscriptions = [];
 
   const pauseSinksWhileReplaying = opts.pauseSinksWhileReplaying === undefined ? true : opts.pauseSinksWhileReplaying
 
@@ -29,6 +30,8 @@ export default function restartable (driver, opts={}) {
         returnValue[key] = () => {
           value();
           disposeAllStreams(streams);
+          subscriptions.forEach(sub => sub.dispose());
+          subscriptions = [];
         };
       } else if (value === null) {
         returnValue[key] = value;
@@ -46,13 +49,21 @@ export default function restartable (driver, opts={}) {
 
   function wrapSourceFunction (name, f, context, scope = []) {
     return function (...args) {
-      scope = scope.concat([name], args);
+      let newScope;
+
+      if (typeof args[0] === 'string') {
+        newScope = scope.concat([args[0]]);
+      }
 
       const returnValue = f.bind(context, ...args)();
 
+      if (name.indexOf('isolate') !== -1) {
+        return returnValue;
+      }
+
       if (typeof returnValue === 'object') {
         if (typeof returnValue.subscribe === 'function') {
-          const ident = scope.join('/');
+          const ident = newScope.join('/');
 
           if (streams[ident] === undefined) {
             streams[ident] = new ReplaySubject();
@@ -60,16 +71,18 @@ export default function restartable (driver, opts={}) {
 
           const stream = streams[ident];
 
-          returnValue.subscribe(event => {
+          const subscription = returnValue.subscribe(event => {
             log.push({event, time: new Date(), ident, stream});
 
             stream.onNext(event);
           });
 
+          subscriptions.push(subscription);
+
           return stream;
         }
 
-        return wrapSource(returnValue, scope);
+        return wrapSource(returnValue, newScope);
       } else {
         return returnValue;
       }
@@ -93,7 +106,7 @@ export default function restartable (driver, opts={}) {
       source.subscribe(event => {
         const loggedEvent$ = event.do(response => {
           log.push({event: Observable.just(response), time: new Date(), stream: source$, ident: ':root'});
-        })
+        });
 
         source$.onNext(loggedEvent$);
       });
@@ -103,7 +116,7 @@ export default function restartable (driver, opts={}) {
       returnValue = wrapSource(source);
     }
 
-    returnValue.history = () => log
+    returnValue.history = () => log;
 
     return returnValue;
   }
