@@ -9,6 +9,10 @@ So that you can use hot module reloading to change your code on the fly, and hav
 How do I use it?
 ---
 
+Firstly,
+
+`npm install cycle-restart --save`
+
 cycle-restart is designed to be used in conjunction with hot module reloading, provided either by browserify-hmr or webpack.
 
 ```js
@@ -41,3 +45,5 @@ Limitations
 ---
 
 Currently, `restartable` has only been tested with `@cycle/dom` and `@cycle/http`. The plan is to make it generic enough to work with any driver, so if you run into a driver that doesn't work correctly with `restartable`, please open an issue.
+
+cycle-restart is still at an experimental stage, and there is currently no easy way to disable it in production.
