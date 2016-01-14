@@ -53,7 +53,7 @@ function wrapSourceFunction ({streams, subscriptions, log}, name, f, context, sc
   };
 }
 
-function wrapSource ({streams, subscriptions, log}, source, scope=[]) {
+function wrapSource ({streams, subscriptions, log}, source, scope = []) {
   const returnValue = {};
 
   Object.keys(source).forEach(key => {
@@ -61,10 +61,6 @@ function wrapSource ({streams, subscriptions, log}, source, scope=[]) {
 
     if (key === 'dispose') {
       returnValue[key] = makeDispose({streams, subscriptions}, value);
-    } else if (value === null) {
-      returnValue[key] = value;
-    } else if (typeof value.subscribe === 'function') {
-      returnValue[key] = value;
     } else if (typeof value === 'function') {
       returnValue[key] = wrapSourceFunction({streams, subscriptions, log}, key, value, returnValue, scope);
     } else {
@@ -75,16 +71,14 @@ function wrapSource ({streams, subscriptions, log}, source, scope=[]) {
   return returnValue;
 }
 
-export default function restartable (driver, opts={}) {
+export default function restartable (driver, opts = {}) {
   const log = [];
   const streams = {};
   let subscriptions = [];
 
-  const pauseSinksWhileReplaying = opts.pauseSinksWhileReplaying === undefined ? true : opts.pauseSinksWhileReplaying
+  const pauseSinksWhileReplaying = opts.pauseSinksWhileReplaying === undefined ? true : opts.pauseSinksWhileReplaying;
 
   let replaying;
-
-
 
   function restartableDriver (sink$) {
     let filteredSink$ = sink$;
