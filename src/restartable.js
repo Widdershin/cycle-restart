@@ -117,27 +117,27 @@ export default function restartable (driver, opts = {}) {
       returnValue = wrapSource({streams, subscriptions, log}, source);
     }
 
-    returnValue.history = () => log;
+    returnValue.log = () => log;
 
     return returnValue;
   }
 
   function replayable (driver) {
-    driver.aboutToReplay = function () {
+    driver.onPreReplay = function () {
       replaying = true;
     };
 
-    driver.replayHistory = function (scheduler, newHistory) {
+    driver.replayLog = function (scheduler, newLog) {
       function scheduleEvent (historicEvent) {
         scheduler.scheduleAbsolute({}, historicEvent.time, () => {
           streams[historicEvent.identifier].onNext(historicEvent.event);
         });
       }
 
-      newHistory.forEach(scheduleEvent);
+      newLog.forEach(scheduleEvent);
     };
 
-    driver.replayFinished = function () {
+    driver.onPostReplay = function () {
       replaying = false;
     };
 

@@ -13,8 +13,8 @@ function restart (main, drivers, {sources, sinks}, isolate = {}) {
   for (let driverName in drivers) {
     const driver = drivers[driverName];
 
-    if (driver.aboutToReplay) {
-      driver.aboutToReplay();
+    if (driver.onPreReplay) {
+      driver.onPreReplay();
     }
   }
 
@@ -26,10 +26,10 @@ function restart (main, drivers, {sources, sinks}, isolate = {}) {
     for (let driverName in drivers) {
       const driver = drivers[driverName];
 
-      if (driver.replayHistory) {
-        const history = sources[driverName].history();
+      if (driver.replayLog) {
+        const log = sources[driverName].log();
 
-        driver.replayHistory(scheduler, history);
+        driver.replayLog(scheduler, log);
       }
     }
 
@@ -39,8 +39,8 @@ function restart (main, drivers, {sources, sinks}, isolate = {}) {
         for (let driverName in drivers) {
           const driver = drivers[driverName];
 
-          if (driver.replayFinished) {
-            driver.replayFinished();
+          if (driver.onPostReplay) {
+            driver.onPostReplay();
           }
         }
       }, 500);
