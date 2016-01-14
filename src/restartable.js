@@ -16,7 +16,7 @@ function makeDispose ({streams, subscriptions}, originalDispose) {
     disposeAllStreams(streams);
     subscriptions.forEach(sub => sub.dispose());
     subscriptions = [];
-  }
+  };
 }
 
 function record ({streams, subscriptions, log}, streamToRecord, identifier) {
@@ -35,6 +35,22 @@ function record ({streams, subscriptions, log}, streamToRecord, identifier) {
   subscriptions.push(subscription);
 
   return stream;
+}
+
+function recordObservableSource ({streams, log}, source) {
+  const source$ = new ReplaySubject(1);
+
+  streams[':root'] = source$;
+
+  source.subscribe(event => {
+    const loggedEvent$ = event.do(response => {
+      log.push({event: Observable.just(response), time: new Date(), stream: source$, identifier: ':root'});
+    });
+
+    source$.onNext(loggedEvent$);
+  });
+
+  return source$;
 }
 
 function wrapSourceFunction ({streams, subscriptions, log}, name, f, context, scope = []) {
@@ -92,21 +108,11 @@ export default function restartable (driver, opts = {}) {
     }
 
     const source = driver(filteredSink$);
-    const source$ = new ReplaySubject(1);
 
-    streams[':root'] = source$;
     let returnValue;
 
     if (typeof source.subscribe === 'function') {
-      source.subscribe(event => {
-        const loggedEvent$ = event.do(response => {
-          log.push({event: Observable.just(response), time: new Date(), stream: source$, identifier: ':root'});
-        });
-
-        source$.onNext(loggedEvent$);
-      });
-
-      returnValue = source$;
+      returnValue = recordObservableSource({streams, log}, source);
     } else {
       returnValue = wrapSource({streams, subscriptions, log}, source);
     }
@@ -116,23 +122,27 @@ export default function restartable (driver, opts = {}) {
     return returnValue;
   }
 
-  restartableDriver.aboutToReplay = function () {
-    replaying = true;
-  };
+  function replayable (driver) {
+    driver.aboutToReplay = function () {
+      replaying = true;
+    };
 
-  restartableDriver.replayHistory = function (scheduler, newHistory) {
-    function scheduleEvent (historicEvent) {
-      scheduler.scheduleAbsolute({}, historicEvent.time, () => {
-        streams[historicEvent.identifier].onNext(historicEvent.event);
-      });
-    }
+    driver.replayHistory = function (scheduler, newHistory) {
+      function scheduleEvent (historicEvent) {
+        scheduler.scheduleAbsolute({}, historicEvent.time, () => {
+          streams[historicEvent.identifier].onNext(historicEvent.event);
+        });
+      }
 
-    log.forEach(scheduleEvent);
-  };
+      newHistory.forEach(scheduleEvent);
+    };
 
-  restartableDriver.replayFinished = function () {
-    replaying = false;
-  };
+    driver.replayFinished = function () {
+      replaying = false;
+    };
 
-  return restartableDriver;
+    return restartableDriver;
+  }
+
+  return replayable(restartableDriver);
 }
