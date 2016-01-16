@@ -10,16 +10,25 @@ function disposeAllStreams (streams) {
   });
 }
 
-function makeDispose ({streams, subscriptions}, originalDispose) {
+function makeDispose ({streams}, originalDispose) {
   return function dispose () {
     originalDispose();
     disposeAllStreams(streams);
-    subscriptions.forEach(sub => sub.dispose());
-    subscriptions = [];
   };
 }
 
-function record ({streams, subscriptions, log}, streamToRecord, identifier) {
+function onDispose (observable, disposeHandler) {
+  const oldDispose = observable.dispose;
+
+  observable.dispose = () => {
+    disposeHandler();
+    oldDispose();
+  };
+
+  return observable;
+}
+
+function record ({streams, log}, streamToRecord, identifier) {
   if (streams[identifier] === undefined) {
     streams[identifier] = new ReplaySubject();
   }
@@ -32,7 +41,7 @@ function record ({streams, subscriptions, log}, streamToRecord, identifier) {
     stream.onNext(event);
   });
 
-  subscriptions.push(subscription);
+  onDispose(stream, () => subscription.dispose());
 
   return stream;
 }
@@ -56,17 +65,12 @@ function recordObservableSource ({streams, log}, source) {
     }
   });
 
-  const oldDispose = source$.dispose;
-
-  source$.dispose = () => {
-    subscription.dispose();
-    oldDispose();
-  }
+  onDispose(source$, () => subscription.dispose());
 
   return source$;
 }
 
-function wrapSourceFunction ({streams, subscriptions, log}, name, f, context, scope = []) {
+function wrapSourceFunction ({streams, log}, name, f, context, scope = []) {
   return function newSource (...args) {
     const newScope = scope.concat(args);
 
@@ -77,25 +81,25 @@ function wrapSourceFunction ({streams, subscriptions, log}, name, f, context, sc
     }
 
     if (typeof returnValue.subscribe !== 'function') {
-      return wrapSource({streams, subscriptions, log}, returnValue, newScope);
+      return wrapSource({streams, log}, returnValue, newScope);
     }
 
     const identifier = newScope.join('/');
 
-    return record({streams, subscriptions, log}, returnValue, identifier);
+    return record({streams, log}, returnValue, identifier);
   };
 }
 
-function wrapSource ({streams, subscriptions, log}, source, scope = []) {
+function wrapSource ({streams, log}, source, scope = []) {
   const returnValue = {};
 
   Object.keys(source).forEach(key => {
     const value = source[key];
 
     if (key === 'dispose') {
-      returnValue[key] = makeDispose({streams, subscriptions}, value);
+      returnValue[key] = makeDispose({streams}, value);
     } else if (typeof value === 'function') {
-      returnValue[key] = wrapSourceFunction({streams, subscriptions, log}, key, value, returnValue, scope);
+      returnValue[key] = wrapSourceFunction({streams, log}, key, value, returnValue, scope);
     } else {
       returnValue[key] = value;
     }
@@ -107,7 +111,6 @@ function wrapSource ({streams, subscriptions, log}, source, scope = []) {
 export default function restartable (driver, opts = {}) {
   const log = [];
   const streams = {};
-  let subscriptions = [];
 
   const pauseSinksWhileReplaying = opts.pauseSinksWhileReplaying === undefined ? true : opts.pauseSinksWhileReplaying;
 
@@ -127,7 +130,7 @@ export default function restartable (driver, opts = {}) {
     if (typeof source.subscribe === 'function') {
       returnValue = recordObservableSource({streams, log}, source);
     } else {
-      returnValue = wrapSource({streams, subscriptions, log}, source);
+      returnValue = wrapSource({streams, log}, source);
     }
 
     returnValue.log = () => log;
