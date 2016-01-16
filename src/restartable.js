@@ -42,13 +42,26 @@ function recordObservableSource ({streams, log}, source) {
 
   streams[':root'] = source$;
 
-  source.subscribe(event => {
-    const loggedEvent$ = event.do(response => {
-      log.push({event: Observable.just(response), time: new Date(), stream: source$, identifier: ':root'});
-    });
+  const subscription = source.subscribe(event => {
+    if (typeof event.subscribe === 'function') {
+      const loggedEvent$ = event.do(response => {
+        log.push({event: Observable.just(response), time: new Date(), stream: source$, identifier: ':root'});
+      });
 
-    source$.onNext(loggedEvent$);
+      source$.onNext(loggedEvent$);
+    } else {
+      source$.onNext(event);
+
+      log.push({event, time: new Date(), identifier: ':root'});
+    }
   });
+
+  const oldDispose = source$.dispose;
+
+  source$.dispose = () => {
+    subscription.dispose();
+    oldDispose();
+  }
 
   return source$;
 }

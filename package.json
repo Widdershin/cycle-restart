@@ -3,7 +3,9 @@
   "version": "0.0.3",
   "description": "Restart a Cycle.js application and preserve state.",
   "main": "lib/restart",
-  "files": ["lib"],
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "test": "npm run test-node && npm run test-browser",
     "test-node": "mocha --compilers js:babel-core/register test/node/*",
@@ -33,6 +35,7 @@
   "homepage": "https://github.com/Widdershin/cycle-restart",
   "devDependencies": {
     "@cycle/dom": "^9.0.1",
+    "@cycle/history": "^1.1.0",
     "@cycle/http": "^7.0.0",
     "@cycle/isolate": "^1.2.0",
     "babel-cli": "^6.3.15",
