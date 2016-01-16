@@ -54,8 +54,17 @@ function recordObservableSource ({streams, log}, source) {
   const subscription = source.subscribe(event => {
     if (typeof event.subscribe === 'function') {
       const loggedEvent$ = event.do(response => {
-        log.push({event: Observable.just(response), time: new Date(), stream: source$, identifier: ':root'});
+        log.push({
+          event: Object.assign(
+            Observable.just(response),
+            event
+          ),
+          time: new Date(),
+          identifier: ':root'
+        });
       });
+
+      loggedEvent$.request = event.request;
 
       source$.onNext(loggedEvent$);
     } else {
