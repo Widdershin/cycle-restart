@@ -119,7 +119,7 @@ export default function restartable (driver, opts = {}) {
   function restartableDriver (sink$) {
     let filteredSink$ = sink$;
 
-    if (pauseSinksWhileReplaying) {
+    if (sink$ && pauseSinksWhileReplaying) {
       filteredSink$ = sink$.filter(_ => !replaying);
     }
 
@@ -127,7 +127,9 @@ export default function restartable (driver, opts = {}) {
 
     let returnValue;
 
-    if (typeof source.subscribe === 'function') {
+    if (source === undefined || source === null) {
+      return source;
+    } else if (typeof source.subscribe === 'function') {
       returnValue = recordObservableSource({streams, log}, source);
     } else {
       returnValue = wrapSource({streams, log}, source);
