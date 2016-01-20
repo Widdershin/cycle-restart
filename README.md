@@ -1,19 +1,21 @@
 # cycle-restart
-Restart a Cycle.js application with new code and replay the user's events.
+Restart a Cycle.js application with new code and see the change instantly.
 
 Why?
 ---
 
 So that you can use hot module reloading to change your code on the fly, and have the app act as if your new code had been running all along. The feedback loop is phenomenally short!
 
-How do I use it?
+Installation
 ---
-
-Firstly,
 
 `npm install cycle-restart --save`
 
-cycle-restart is designed to be used in conjunction with hot module reloading, provided either by browserify-hmr or webpack.
+
+How do I use it?
+---
+
+cycle-restart is designed to be used with hot module reloading, provided either by browserify-hmr or webpack.
 
 ```js
 import {run} from '@cycle/core';
