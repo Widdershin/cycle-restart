@@ -93,4 +93,39 @@ describe('restarting a cycle app that makes http requests', () => {
       });
     });
   });
+
+  function requestMain ({HTTP}) {
+    const request$ = HTTP.flatMap(res$ => res$, (outer) => {
+      return outer.request;
+    });
+
+    return {
+      HTTP: Observable.just('localhost:8532/a'),
+      request$
+    };
+  }
+
+  it('has the request available on the response', (done) => {
+    requestCount = 0;
+
+    const drivers = {
+      HTTP: restartable(makeHTTPDriver())
+    };
+
+    assert.equal(requestCount, 0);
+
+    const {sources, sinks} = run(requestMain, drivers);
+
+    sinks.request$.take(1).subscribe(text => {
+      assert.deepEqual(text, {url: 'localhost:8532/a'});
+
+      const restartedSinks = restart(requestMain, drivers, {sources, sinks}).sinks;
+
+      restartedSinks.request$.take(1).subscribe(text => {
+        assert.deepEqual(text, {url: 'localhost:8532/a'});
+
+        done();
+      });
+    });
+  });
 });
