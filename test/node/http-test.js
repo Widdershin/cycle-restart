@@ -96,8 +96,8 @@ describe('restarting a cycle app that makes http requests', () => {
 
   function requestMain ({HTTP}) {
     const request$ = HTTP.flatMap(res$ => res$, (outer) => {
-      return outer.request
-    })
+      return outer.request;
+    });
 
     return {
       HTTP: Observable.just('localhost:8532/a'),
@@ -119,7 +119,6 @@ describe('restarting a cycle app that makes http requests', () => {
     sinks.request$.take(1).subscribe(text => {
       assert.deepEqual(text, {url: 'localhost:8532/a'});
 
-      console.log('restarting');
       const restartedSinks = restart(requestMain, drivers, {sources, sinks}).sinks;
 
       restartedSinks.request$.take(1).subscribe(text => {
