@@ -28,7 +28,7 @@ function onDispose (observable, disposeHandler) {
   return observable;
 }
 
-function record ({streams, logEntry$}, streamToRecord, identifier) {
+function record ({streams, addLogEntry}, streamToRecord, identifier) {
   if (streams[identifier] === undefined) {
     streams[identifier] = new ReplaySubject();
   }
@@ -36,7 +36,7 @@ function record ({streams, logEntry$}, streamToRecord, identifier) {
   const stream = streams[identifier];
 
   const subscription = streamToRecord.subscribe(event => {
-    logEntry$.onNext({event, time: new Date(), identifier, stream});
+    addLogEntry({event, time: new Date(), identifier, stream});
 
     stream.onNext(event);
   });
@@ -46,7 +46,7 @@ function record ({streams, logEntry$}, streamToRecord, identifier) {
   return stream;
 }
 
-function recordObservableSource ({streams, logEntry$}, source) {
+function recordObservableSource ({streams, addLogEntry}, source) {
   const source$ = new ReplaySubject(1);
 
   streams[':root'] = source$;
@@ -54,7 +54,7 @@ function recordObservableSource ({streams, logEntry$}, source) {
   const subscription = source.subscribe(event => {
     if (typeof event.subscribe === 'function') {
       const loggedEvent$ = event.do(response => {
-        logEntry$.onNext({
+        addLogEntry({
           event: Object.assign(
             Observable.just(response),
             event
@@ -70,7 +70,7 @@ function recordObservableSource ({streams, logEntry$}, source) {
     } else {
       source$.onNext(event);
 
-      logEntry$.onNext({event, time: new Date(), identifier: ':root'});
+      addLogEntry({event, time: new Date(), identifier: ':root'});
     }
   });
 
@@ -79,7 +79,7 @@ function recordObservableSource ({streams, logEntry$}, source) {
   return source$;
 }
 
-function wrapSourceFunction ({streams, logEntry$}, name, f, context, scope = []) {
+function wrapSourceFunction ({streams, addLogEntry}, name, f, context, scope = []) {
   return function newSource (...args) {
     const newScope = scope.concat(args);
 
@@ -90,16 +90,16 @@ function wrapSourceFunction ({streams, logEntry$}, name, f, context, scope = [])
     }
 
     if (typeof returnValue.subscribe !== 'function') {
-      return wrapSource({streams, logEntry$}, returnValue, newScope);
+      return wrapSource({streams, addLogEntry}, returnValue, newScope);
     }
 
     const identifier = newScope.join('/');
 
-    return record({streams, logEntry$}, returnValue, identifier);
+    return record({streams, addLogEntry}, returnValue, identifier);
   };
 }
 
-function wrapSource ({streams, logEntry$}, source, scope = []) {
+function wrapSource ({streams, addLogEntry}, source, scope = []) {
   const returnValue = {};
 
   Object.keys(source).forEach(key => {
@@ -108,7 +108,7 @@ function wrapSource ({streams, logEntry$}, source, scope = []) {
     if (key === 'dispose') {
       returnValue[key] = makeDispose({streams}, value);
     } else if (typeof value === 'function') {
-      returnValue[key] = wrapSourceFunction({streams, logEntry$}, key, value, returnValue, scope);
+      returnValue[key] = wrapSourceFunction({streams, addLogEntry}, key, value, returnValue, scope);
     } else {
       returnValue[key] = value;
     }
@@ -124,6 +124,11 @@ export default function restartable (driver, opts = {}) {
     .scan((log, entry) => log.concat([entry]))
     .shareReplay(1);
 
+  function addLogEntry (entry) {
+    logEntry$.onNext(entry);
+  }
+
+  // TODO - dispose log subscription
   log$.subscribe();
 
   const streams = {};
@@ -146,9 +151,9 @@ export default function restartable (driver, opts = {}) {
     if (source === undefined || source === null) {
       return source;
     } else if (typeof source.subscribe === 'function') {
-      returnValue = recordObservableSource({streams, logEntry$}, source);
+      returnValue = recordObservableSource({streams, addLogEntry}, source);
     } else {
-      returnValue = wrapSource({streams, logEntry$}, source);
+      returnValue = wrapSource({streams, addLogEntry}, source);
     }
 
     returnValue.log$ = log$;

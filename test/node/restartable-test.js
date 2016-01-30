@@ -22,7 +22,7 @@ describe('restartable', () => {
   });
 
   describe('sources.log$', () => {
-    it('is subscribable', (done) => {
+    it('is observable', (done) => {
       const testSubject = new Subject();
       const testDriver = () => testSubject;
 
