@@ -95,8 +95,8 @@ describe('restarting a cycle app that makes http requests', () => {
   });
 
   function requestMain ({HTTP}) {
-    const request$ = HTTP.flatMap(res$ => res$, (outer) => {
-      return outer.request;
+    const request$ = HTTP.flatMap(res$ => res$, (outer, inner) => {
+      return inner.request;
     });
 
     return {
@@ -117,12 +117,12 @@ describe('restarting a cycle app that makes http requests', () => {
     const {sources, sinks} = run(requestMain, drivers);
 
     sinks.request$.take(1).subscribe(text => {
-      assert.deepEqual(text, {url: 'localhost:8532/a'});
+      assert.equal(text.url, 'localhost:8532/a');
 
       const restartedSinks = restart(requestMain, drivers, {sources, sinks}).sinks;
 
       restartedSinks.request$.take(1).subscribe(text => {
-        assert.deepEqual(text, {url: 'localhost:8532/a'});
+        assert.equal(text.url, 'localhost:8532/a');
 
         done();
       });
