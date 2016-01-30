@@ -28,7 +28,7 @@ function onDispose (observable, disposeHandler) {
   return observable;
 }
 
-function record ({streams, log, logEntry$}, streamToRecord, identifier) {
+function record ({streams, logEntry$}, streamToRecord, identifier) {
   if (streams[identifier] === undefined) {
     streams[identifier] = new ReplaySubject();
   }
@@ -36,7 +36,6 @@ function record ({streams, log, logEntry$}, streamToRecord, identifier) {
   const stream = streams[identifier];
 
   const subscription = streamToRecord.subscribe(event => {
-    log.push({event, time: new Date(), identifier, stream});
     logEntry$.onNext({event, time: new Date(), identifier, stream});
 
     stream.onNext(event);
@@ -47,7 +46,7 @@ function record ({streams, log, logEntry$}, streamToRecord, identifier) {
   return stream;
 }
 
-function recordObservableSource ({streams, log, logEntry$}, source) {
+function recordObservableSource ({streams, logEntry$}, source) {
   const source$ = new ReplaySubject(1);
 
   streams[':root'] = source$;
@@ -55,15 +54,6 @@ function recordObservableSource ({streams, log, logEntry$}, source) {
   const subscription = source.subscribe(event => {
     if (typeof event.subscribe === 'function') {
       const loggedEvent$ = event.do(response => {
-        log.push({
-          event: Object.assign(
-            Observable.just(response),
-            event
-          ),
-          time: new Date(),
-          identifier: ':root'
-        });
-
         logEntry$.onNext({
           event: Object.assign(
             Observable.just(response),
@@ -80,7 +70,6 @@ function recordObservableSource ({streams, log, logEntry$}, source) {
     } else {
       source$.onNext(event);
 
-      log.push({event, time: new Date(), identifier: ':root'});
       logEntry$.onNext({event, time: new Date(), identifier: ':root'});
     }
   });
@@ -90,7 +79,7 @@ function recordObservableSource ({streams, log, logEntry$}, source) {
   return source$;
 }
 
-function wrapSourceFunction ({streams, log, logEntry$}, name, f, context, scope = []) {
+function wrapSourceFunction ({streams, logEntry$}, name, f, context, scope = []) {
   return function newSource (...args) {
     const newScope = scope.concat(args);
 
@@ -101,16 +90,16 @@ function wrapSourceFunction ({streams, log, logEntry$}, name, f, context, scope 
     }
 
     if (typeof returnValue.subscribe !== 'function') {
-      return wrapSource({streams, log, logEntry$}, returnValue, newScope);
+      return wrapSource({streams, logEntry$}, returnValue, newScope);
     }
 
     const identifier = newScope.join('/');
 
-    return record({streams, log, logEntry$}, returnValue, identifier);
+    return record({streams, logEntry$}, returnValue, identifier);
   };
 }
 
-function wrapSource ({streams, log, logEntry$}, source, scope = []) {
+function wrapSource ({streams, logEntry$}, source, scope = []) {
   const returnValue = {};
 
   Object.keys(source).forEach(key => {
@@ -119,7 +108,7 @@ function wrapSource ({streams, log, logEntry$}, source, scope = []) {
     if (key === 'dispose') {
       returnValue[key] = makeDispose({streams}, value);
     } else if (typeof value === 'function') {
-      returnValue[key] = wrapSourceFunction({streams, log, logEntry$}, key, value, returnValue, scope);
+      returnValue[key] = wrapSourceFunction({streams, logEntry$}, key, value, returnValue, scope);
     } else {
       returnValue[key] = value;
     }
@@ -129,7 +118,6 @@ function wrapSource ({streams, log, logEntry$}, source, scope = []) {
 }
 
 export default function restartable (driver, opts = {}) {
-  const log = [];
   const logEntry$ = new Subject();
   const log$ = logEntry$
     .startWith([])
@@ -158,12 +146,11 @@ export default function restartable (driver, opts = {}) {
     if (source === undefined || source === null) {
       return source;
     } else if (typeof source.subscribe === 'function') {
-      returnValue = recordObservableSource({streams, log, logEntry$}, source);
+      returnValue = recordObservableSource({streams, logEntry$}, source);
     } else {
-      returnValue = wrapSource({streams, log, logEntry$}, source);
+      returnValue = wrapSource({streams, logEntry$}, source);
     }
 
-    returnValue.log = () => [];
     returnValue.log$ = log$;
 
     return returnValue;
