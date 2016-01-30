@@ -21,25 +21,7 @@ describe('restartable', () => {
     done();
   });
 
-  describe('sources.log', () => {
-    it('exists', () => {
-      const testSubject = new Subject();
-      const testDriver = () => testSubject;
-
-      const driver = restartable(testDriver)();
-
-      assert.deepEqual(driver.log(), []);
-
-      testSubject.onNext('foo');
-
-      assert.equal(driver.log().length, 1);
-
-      const loggedEvent = driver.log()[0];
-
-      assert.deepEqual(loggedEvent.identifier, ':root');
-      assert.deepEqual(loggedEvent.event, 'foo');
-    });
-
+  describe('sources.log$', () => {
     it('is subscribable', (done) => {
       const testSubject = new Subject();
       const testDriver = () => testSubject;

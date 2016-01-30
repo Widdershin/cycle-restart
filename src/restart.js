@@ -27,9 +27,9 @@ function restart (main, drivers, {sources, sinks}, isolate = {}) {
       const driver = drivers[driverName];
 
       if (driver.replayLog) {
-        const log = sources[driverName].log();
+        const log$ = sources[driverName].log$
 
-        driver.replayLog(scheduler, log);
+        driver.replayLog(scheduler, log$);
       }
     }
 

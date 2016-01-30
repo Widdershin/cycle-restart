@@ -163,7 +163,7 @@ export default function restartable (driver, opts = {}) {
       returnValue = wrapSource({streams, log, logEntry$}, source);
     }
 
-    returnValue.log = () => log;
+    returnValue.log = () => [];
     returnValue.log$ = log$;
 
     return returnValue;
@@ -174,14 +174,16 @@ export default function restartable (driver, opts = {}) {
       replaying = true;
     };
 
-    driver.replayLog = function (scheduler, newLog) {
-      function scheduleEvent (historicEvent) {
-        scheduler.scheduleAbsolute({}, historicEvent.time, () => {
-          streams[historicEvent.identifier].onNext(historicEvent.event);
-        });
-      }
+    driver.replayLog = function (scheduler, newLog$) {
+      newLog$.take(1).subscribe(newLog => {
+        function scheduleEvent (historicEvent) {
+          scheduler.scheduleAbsolute({}, historicEvent.time, () => {
+            streams[historicEvent.identifier].onNext(historicEvent.event);
+          });
+        }
 
-      newLog.forEach(scheduleEvent);
+        newLog.forEach(scheduleEvent);
+      });
     };
 
     driver.onPostReplay = function () {
