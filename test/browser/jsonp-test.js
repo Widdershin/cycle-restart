@@ -27,7 +27,6 @@ describe('restarting a cycle app that makes jsonp requests', () => {
     const responses$ = JSONP.mergeAll();
 
     const request$ = JSONP.flatMap(res$ => res$, (outer, inner) => {
-      console.log('iTSsgfdgapp');
       return outer.request;
     });
 
@@ -75,7 +74,6 @@ describe('restarting a cycle app that makes jsonp requests', () => {
   });
 
   it('allows access to the request', (done) => {
-    console.log('begin!');
     const drivers = {
       JSONP: restartable(makeJSONPDriver())
     };
