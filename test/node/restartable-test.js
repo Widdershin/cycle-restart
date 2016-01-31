@@ -141,7 +141,7 @@ describe('restartable', () => {
         setTimeout(() => {
           restartableTestDriver.replayLog(scheduler, driver.log$, timeToResetTo);
 
-          driver.debounce(5).subscribe(val => {
+          driver.debounce(50).subscribe(val => {
             assert.equal(val, 'snaz');
             done();
           });
