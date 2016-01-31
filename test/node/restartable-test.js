@@ -1,7 +1,7 @@
 /* globals describe, it, before, after */
 import assert from 'assert';
 import {restartable} from '../../src/restart';
-import {Observable, Subject} from 'rx';
+import {Observable, Subject, HistoricalScheduler} from 'rx';
 
 
 describe('restartable', () => {
@@ -93,6 +93,33 @@ describe('restartable', () => {
 
         done();
       });
+    });
+  });
+
+  describe('replayLog', () => {
+    it('schedules the events in the provided log$', (done) => {
+      const scheduler = new HistoricalScheduler();
+
+      const testSubject = new Subject();
+      const testDriver = () => testSubject;
+      const restartableTestDriver = restartable(testDriver);
+
+      const driver = restartableTestDriver();
+
+      testSubject.onNext('snaz');
+
+      assert.equal(scheduler.queue.length, 0);
+
+      restartableTestDriver.replayLog(scheduler, driver.log$);
+
+      assert.equal(scheduler.queue.length, 1);
+
+      driver.skip(1).subscribe(val => {
+        assert.equal(val, 'snaz');
+        done();
+      });
+
+      scheduler.start();
     });
   });
 });
