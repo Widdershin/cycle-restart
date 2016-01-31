@@ -2,11 +2,11 @@ import {run} from '@cycle/core';
 import Rx from 'rx';
 import restartable from './restartable';
 
-function restart (main, drivers, {sources, sinks}, isolate = {}) {
+function restart (main, drivers, {sources, sinks}, isolate = {}, timeToTravelTo = null) {
   sources.dispose();
   sinks && sinks.dispose();
 
-  if ('reset' in isolate) {
+  if (typeof isolate === 'function' && 'reset' in isolate) {
     isolate.reset();
   }
 
@@ -27,9 +27,9 @@ function restart (main, drivers, {sources, sinks}, isolate = {}) {
       const driver = drivers[driverName];
 
       if (driver.replayLog) {
-        const log$ = sources[driverName].log$
+        const log$ = sources[driverName].log$;
 
-        driver.replayLog(scheduler, log$);
+        driver.replayLog(scheduler, log$, timeToTravelTo);
       }
     }
 

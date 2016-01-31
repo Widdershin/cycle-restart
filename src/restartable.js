@@ -166,7 +166,7 @@ export default function restartable (driver, opts = {}) {
       replaying = true;
     };
 
-    driver.replayLog = function (scheduler, newLog$) {
+    driver.replayLog = function (scheduler, newLog$, timeToResetTo = null) {
       newLog$.take(1).subscribe(newLog => {
         function scheduleEvent (historicEvent) {
           scheduler.scheduleAbsolute({}, historicEvent.time, () => {
@@ -174,7 +174,7 @@ export default function restartable (driver, opts = {}) {
           });
         }
 
-        newLog.forEach(scheduleEvent);
+        newLog.filter(event => timeToResetTo === null || event.time <= timeToResetTo).forEach(scheduleEvent);
       });
     };
 

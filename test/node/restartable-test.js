@@ -121,5 +121,32 @@ describe('restartable', () => {
 
       scheduler.start();
     });
+
+    it('options takes a time to replay to', (done) => {
+      const scheduler = new HistoricalScheduler();
+
+      const testSubject = new Subject();
+      const testDriver = () => testSubject;
+      const restartableTestDriver = restartable(testDriver);
+
+      const driver = restartableTestDriver();
+
+      testSubject.onNext('snaz');
+
+      const timeToResetTo = new Date();
+
+      setTimeout(() => {
+        testSubject.onNext('snaz2');
+
+        restartableTestDriver.replayLog(scheduler, driver.log$, timeToResetTo);
+
+        driver.debounce(5).subscribe(val => {
+          assert.equal(val, 'snaz');
+          done();
+        });
+
+        scheduler.start();
+      });
+    });
   });
 });
