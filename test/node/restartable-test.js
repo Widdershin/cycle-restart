@@ -138,14 +138,16 @@ describe('restartable', () => {
       setTimeout(() => {
         testSubject.onNext('snaz2');
 
-        restartableTestDriver.replayLog(scheduler, driver.log$, timeToResetTo);
+        setTimeout(() => {
+          restartableTestDriver.replayLog(scheduler, driver.log$, timeToResetTo);
 
-        driver.debounce(5).subscribe(val => {
-          assert.equal(val, 'snaz');
-          done();
-        });
+          driver.debounce(5).subscribe(val => {
+            assert.equal(val, 'snaz');
+            done();
+          });
 
-        scheduler.start();
+          scheduler.start();
+        }, 50);
       });
     });
   });
