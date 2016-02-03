@@ -43,6 +43,8 @@ if (module.hot) {
 }
 ```
 
+Then, to run the hot reloading server with e.g. browserify, run `watchify -t babelify -p browserify-hmr src/main.js -o dist/main.js` and open the `index.html` file which runs `dist/main.js`. 
+
 Limitations
 ---
 
