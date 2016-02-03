@@ -30,7 +30,7 @@ function onDispose (observable, disposeHandler) {
 
 function record ({streams, addLogEntry}, streamToRecord, identifier) {
   if (streams[identifier] === undefined) {
-    streams[identifier] = new ReplaySubject();
+    streams[identifier] = new Subject();
   }
 
   const stream = streams[identifier];
