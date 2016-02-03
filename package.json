@@ -1,6 +1,6 @@
 {
   "name": "cycle-restart",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Restart a Cycle.js application and preserve state.",
   "main": "lib/restart",
   "files": [
