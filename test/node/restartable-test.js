@@ -34,11 +34,47 @@ describe('restartable', () => {
   it('supports selector style drivers that use startWith', (done) => {
     const testDriver = () => ({foo: (val) => Observable.just('bar').delay(30).startWith(val)});
 
+    restartable(testDriver, {replayFirst: true})().foo('boo').take(1).subscribe((val) => {
+      assert.equal('boo', val);
+
+      done();
+    });
+  });
+
+  it('supports drivers that dont need a replay', (done) => {
+    const testSubject = new Subject();
+    const testDriver = () => testSubject;
+
+    testSubject.onNext('bar');
+
+    restartable(testDriver)().take(1).subscribe((val) => {
+      assert.equal('boo', val);
+
+      restartable(testDriver)().take(1).subscribe((val) => {
+        assert.equal('snaz', val);
+
+        done();
+      });
+
+      testSubject.onNext('snaz');
+    });
+
+    testSubject.onNext('boo');
+  });
+
+  it('supports selector style drivers that dont need a replay', (done) => {
+    const testSubject = new Subject();
+    const testDriver = () => ({foo: (val) => testSubject});
+
+    testSubject.onNext('bar');
+
     restartable(testDriver)().foo('boo').take(1).subscribe((val) => {
       assert.equal('boo', val);
 
       done();
     });
+
+    testSubject.onNext('boo');
   });
 
   describe('sources.log$', () => {
