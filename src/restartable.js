@@ -38,14 +38,15 @@ function record ({streams, addLogEntry}, streamToRecord, identifier) {
   const subscription = streamToRecord.subscribe(event => {
     if (typeof event.subscribe === 'function') {
       const loggedEvent$ = event.do(response => {
-        addLogEntry({
-          event: Object.assign(
-            Observable.just(response),
-            event
-          ),
+        const recordedEvent = Object.assign(Observable.just(response), event);
+
+        const logEntry = {
+          event: recordedEvent,
           time: new Date(),
-          identifier: ':root'
-        });
+          identifier
+        };
+
+        addLogEntry(logEntry);
       });
 
       loggedEvent$.request = event.request;
@@ -101,7 +102,23 @@ function wrapSource ({streams, addLogEntry}, source, scope = []) {
   return returnValue;
 }
 
-export default function restartable (driver, opts = {}) {
+function replayable (driver, streams, onPreReplay, onPostReplay) {
+  function replayLog (scheduler, newLog$, timeToResetTo = null) {
+    newLog$.take(1).subscribe(newLog => {
+      function scheduleEvent (historicEvent) {
+        scheduler.scheduleAbsolute({}, historicEvent.time, () => {
+          streams[historicEvent.identifier].onNext(historicEvent.event);
+        });
+      }
+
+      newLog.filter(event => timeToResetTo === null || event.time <= timeToResetTo).forEach(scheduleEvent);
+    });
+  }
+
+  return Object.assign(driver, {replayLog, onPreReplay, onPostReplay});
+}
+
+function makeLog$() {
   const logEntry$ = new Subject();
   const log$ = logEntry$
     .startWith([])
@@ -111,6 +128,12 @@ export default function restartable (driver, opts = {}) {
   function addLogEntry (entry) {
     logEntry$.onNext(entry);
   }
+
+  return {log$, addLogEntry};
+}
+
+export default function restartable (driver, opts = {}) {
+  const {log$, addLogEntry} = makeLog$();
 
   // TODO - dispose log subscription
   log$.subscribe();
@@ -146,29 +169,8 @@ export default function restartable (driver, opts = {}) {
     return returnValue;
   }
 
-  function replayable (driver) {
-    driver.onPreReplay = function () {
-      replaying = true;
-    };
+  const onPreReplay = () => replaying = true;
+  const onPostReplay = () => replaying = false;
 
-    driver.replayLog = function (scheduler, newLog$, timeToResetTo = null) {
-      newLog$.take(1).subscribe(newLog => {
-        function scheduleEvent (historicEvent) {
-          scheduler.scheduleAbsolute({}, historicEvent.time, () => {
-            streams[historicEvent.identifier].onNext(historicEvent.event);
-          });
-        }
-
-        newLog.filter(event => timeToResetTo === null || event.time <= timeToResetTo).forEach(scheduleEvent);
-      });
-    };
-
-    driver.onPostReplay = function () {
-      replaying = false;
-    };
-
-    return restartableDriver;
-  }
-
-  return replayable(restartableDriver);
+  return replayable(restartableDriver, streams, onPreReplay, onPostReplay);
 }
