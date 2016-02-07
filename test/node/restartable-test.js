@@ -21,6 +21,26 @@ describe('restartable', () => {
     done();
   });
 
+  it('supports drivers that use startWith', (done) => {
+    const testDriver = () => Observable.just('bar').delay(30).startWith('boo');
+
+    restartable(testDriver)().take(1).subscribe((val) => {
+      assert.equal(val, 'boo');
+
+      done();
+    });
+  });
+
+  it('supports selector style drivers that use startWith', (done) => {
+    const testDriver = () => ({foo: (val) => Observable.just('bar').delay(30).startWith(val)});
+
+    restartable(testDriver)().foo('boo').take(1).subscribe((val) => {
+      assert.equal('boo', val);
+
+      done();
+    });
+  });
+
   describe('sources.log$', () => {
     it('is observable', (done) => {
       const testSubject = new Subject();

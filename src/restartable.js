@@ -46,6 +46,7 @@ function record ({streams, addLogEntry}, streamToRecord, identifier) {
   return stream;
 }
 
+// TODO - smash this function into record
 function recordObservableSource ({streams, addLogEntry}, source) {
   const source$ = new ReplaySubject(1);
 
