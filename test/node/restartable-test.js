@@ -5,6 +5,18 @@ import {Observable, Subject, HistoricalScheduler} from 'rx';
 
 
 describe('restartable', () => {
+  it('disposes cleanly', (done) => {
+    const testDriver = () => new Subject();
+
+    const driver = restartable(testDriver)();
+
+    driver.dispose();
+
+    assert.equal(driver.isDisposed, true)
+
+    done();
+  });
+
   it('handles write only drivers', (done) => {
     const testDriver = () => {};
 

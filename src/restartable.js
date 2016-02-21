@@ -18,7 +18,7 @@ function makeDispose ({streams}, originalDispose) {
 }
 
 function onDispose (observable, disposeHandler) {
-  const oldDispose = observable.dispose;
+  const oldDispose = observable.dispose.bind(observable);
 
   observable.dispose = () => {
     disposeHandler();
