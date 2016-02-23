@@ -47,7 +47,7 @@ function restart (main, drivers, {sources, sinks}, isolate = {}, timeToTravelTo 
     });
 
     scheduler.start();
-  });
+  }, 1);
 
   return newSourcesAndSinks;
 }
