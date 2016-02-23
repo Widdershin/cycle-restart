@@ -3,16 +3,30 @@ import assert from 'assert';
 import {restartable} from '../../src/restart';
 import {Observable, Subject, HistoricalScheduler} from 'rx';
 
-
 describe('restartable', () => {
   it('disposes cleanly', (done) => {
     const testDriver = () => new Subject();
 
-    const driver = restartable(testDriver)();
+    const source = restartable(testDriver)();
 
-    driver.dispose();
+    source.dispose();
+    assert.equal(source.isDisposed, true);
 
-    assert.equal(driver.isDisposed, true)
+    done();
+  });
+
+  it('totally disposes sources as well', (done) => {
+    const testDriver = () => ({foo: () => new Subject()});
+
+    const source = restartable(testDriver)();
+
+    const stream = source.foo()
+
+    assert(!stream.isDisposed);
+
+    source.dispose();
+
+    assert(stream.isDisposed);
 
     done();
   });

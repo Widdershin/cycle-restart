@@ -156,6 +156,15 @@ export default function restartable (driver, opts = {}) {
       returnValue = wrapSource({streams, addLogEntry}, source);
     }
 
+    const oldReturnValueDispose = returnValue.dispose;
+
+    returnValue.dispose = function () {
+      oldReturnValueDispose && oldReturnValueDispose();
+      sink$ && sink$.dispose();
+
+      disposeAllStreams(streams);
+    }
+
     returnValue.log$ = log$;
 
     return returnValue;
