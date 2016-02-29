@@ -1,27 +1,26 @@
 # cycle-restart
-Restart a Cycle.js application with new code and see the change instantly.
+Swap out the code in your Cycle.js apps on the fly
 
 Why?
 ---
 
-So that you can use hot module reloading to change your code on the fly, and have the app act as if your new code had been running all along. The feedback loop is phenomenally short!
+So that you can use hot module reloading to change your code and have the app act as if your new code had been running all along. The feedback loop is phenomenally short!
 
 Installation
 ---
 
-`npm install cycle-restart --save`
+`npm install cycle-restart --save-dev`
 
 
 How do I use it?
 ---
 
-cycle-restart is designed to be used with hot module reloading, provided either by browserify-hmr or webpack.
+cycle-restart is designed to be used with hot module reloading, provided either by browserify-hmr or Webpack.
 
 ```js
 import {run} from '@cycle/core';
 import {makeDOMDriver} from '@cycle/dom';
 import {makeHTTPDriver} from '@cycle/http';
-import isolate from '@cycle/isolate';
 
 import {restart, restartable} from 'cycle-restart';
 
@@ -38,16 +37,90 @@ if (module.hot) {
   module.hot.accept('./src/app', () => {
     app = require('./src/app').default;
 
-    restart(app, drivers, {sinks, sources}, isolate);
+    restart(app, drivers, {sinks, sources});
   });
 }
 ```
 
-Then, to run the hot reloading server with e.g. browserify, run `watchify -t babelify -p browserify-hmr src/main.js -o dist/main.js` and open the `index.html` file which runs `dist/main.js`. 
-
-Limitations
+Browserify
 ---
 
-Currently, `restartable` has only been tested with `@cycle/dom` and `@cycle/http`. The plan is to make it generic enough to work with any driver, so if you run into a driver that doesn't work correctly with `restartable`, please open an issue.
+cycle-restart works great with [browserify-hmr](https://github.com/AgentME/browserify-hmr).
 
-cycle-restart is still at an experimental stage, and there is currently no easy way to disable it in production.
+Assuming we have an `index.js` with the above code, and `src/app.js` exporting our `main` function. We also need an `index.html` with a `<script>` that loads our `bundle.js`
+
+First, we need to install `watchify` and `browserify-hmr`:
+
+```bash
+$ npm install watchify browserify-hmr babelify --save-dev
+```
+
+Then we can use `watchify` to serve our bundle:
+
+```bash
+$ watchify -t babelify -p browserify-hmr index.js -o bundle.js
+```
+
+You can also use `budo` as a development server. `budo` makes it easy to also live reload your css. For an example of this, see [Widdershin/cycle-hot-reloading-example](https://github.com/Widdershin/cycle-hot-reloading-example/)
+
+Webpack
+---
+
+Have a look at the [webpack docs](https://github.com/webpack/docs/wiki/hot-module-replacement-with-webpack) for setting up hot module reloading.
+
+(If someone who is familiar with Webpack would like to write some docs here, it would be much appreciated).
+
+Supported drivers
+---
+
+`cycle-restart` is tested against and known to work with the following drivers:
+
+* cycle-dom
+* cycle-http
+* cycle-jsonp
+* cycle-history
+* cycle-animation-driver
+
+Other drivers are likely to work off the bat. If you encounter a problem, please raise an issue and we will try and add compatability. If you use a driver not on this list and it works, let us know about it.
+
+Isolate?
+---
+
+`cycle-restart` does in fact support [isolate](https://github.com/cyclejs/isolate). If you use `isolate` in your apps, simply pass it as an extra argument to `restart`.
+
+```diff
+  import {run} from '@cycle/core';
+  import {makeDOMDriver} from '@cycle/dom';
+  import {makeHTTPDriver} from '@cycle/http';
++ import isolate from '@cycle/isolate';
+
+  import {restart, restartable} from 'cycle-restart';
+
+  import app from './src/app';
+
+  const drivers = {
+    DOM: restartable(makeDOMDriver('.app'), {pauseSinksWhileReplaying: false}),
+    HTTP: restartable(makeHTTPDriver())
+  };
+
+  const {sinks, sources} = run(app, drivers);
+
+  if (module.hot) {
+    module.hot.accept('./src/app', () => {
+      app = require('./src/app').default;
+
+-     restart(app, drivers, {sinks, sources});
++     restart(app, drivers, {sinks, sources}, isolate);
+    });
+  }
+```
+
+Caveats
+---
+
+`cycle-restart` relies on your `main` function being pure. That means all real world side effects need to be encapsulated in drivers.
+
+Here are some of the things that are likely to break right now:
+
+ * Accessing time without using a time driver such as `cycle-animation-driver` or `cycle-time-driver`. Time is a side effect. (This includes `Rx.Observable.interval()` and `Rx.Observable.timestamp()`).
+ * `Math.random()`. If you're using random numbers in your program, you should use a generator that produces deterministic numbers such as the mersenne twister from [random-js](https://github.com/ckknight/random-js).
