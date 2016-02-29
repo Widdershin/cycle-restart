@@ -1,21 +1,24 @@
 # cycle-restart
-Swap out the code in your Cycle.js apps on the fly
 
-Why?
----
+Hot module reloading is super cool. You can change your code in an instant, and you don't have to reload the page to see the result.
 
-So that you can use hot module reloading to change your code and have the app act as if your new code had been running all along. The feedback loop is phenomenally short!
+The most annoying part about it is that it throws away your application state! So if you want to develop with your app in a certain state, you have to recreate that state manually each time the code is reloaded.
+
+cycle-restart solves that problem for you! It records all the actions you perform and replays them after you change your code. Best part is that it happens in the blink of an eye!
 
 Installation
 ---
 
-`npm install cycle-restart --save-dev`
-
+```bash
+$ npm install cycle-restart --save-dev
+```
 
 How do I use it?
 ---
 
 cycle-restart is designed to be used with hot module reloading, provided either by browserify-hmr or Webpack.
+
+You'll want to set up your entry point (usually `index.js`) like so:
 
 ```js
 import {run} from '@cycle/core';
