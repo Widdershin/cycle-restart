@@ -4,7 +4,7 @@ Hot module reloading is super cool. You can change your code in an instant, and 
 
 The most annoying part about it is that it throws away your application state! So if you want to develop with your app in a certain state, you have to recreate that state manually each time the code is reloaded.
 
-cycle-restart solves that problem for you! It records all the actions you perform and replays them after you change your code. Best part is that it happens in the blink of an eye!
+`cycle-restart` solves that problem for you! It records all the actions you perform and replays them after you change your code. Best part is that it happens in the blink of an eye!
 
 Installation
 ---
@@ -16,7 +16,7 @@ $ npm install cycle-restart --save-dev
 How do I use it?
 ---
 
-cycle-restart is designed to be used with hot module reloading, provided either by browserify-hmr or Webpack.
+`cycle-restart` is designed to be used with hot module reloading, provided either by browserify-hmr or Webpack.
 
 You'll want to set up your entry point (usually `index.js`) like so:
 
@@ -48,7 +48,7 @@ if (module.hot) {
 Browserify
 ---
 
-cycle-restart works great with [browserify-hmr](https://github.com/AgentME/browserify-hmr).
+`cycle-restart` works great with [browserify-hmr](https://github.com/AgentME/browserify-hmr).
 
 Assuming we have an `index.js` with the above code, and `src/app.js` exporting our `main` function. We also need an `index.html` with a `<script>` that loads our `bundle.js`
 
@@ -127,3 +127,13 @@ Here are some of the things that are likely to break right now:
 
  * Accessing time without using a time driver such as `cycle-animation-driver` or `cycle-time-driver`. Time is a side effect. (This includes `Rx.Observable.interval()` and `Rx.Observable.timestamp()`).
  * `Math.random()`. If you're using random numbers in your program, you should use a generator that produces deterministic numbers such as the mersenne twister from [random-js](https://github.com/ckknight/random-js).
+
+Contributing
+---
+
+Your contribution is extremely welcome. Please feel free to open issues, pull requests or help in any way you'd like. If you're unsure how best you can contribute, [get in touch](mailto:ncwjohnstone@gmail.com) and we can chat.
+
+License
+---
+
+`cycle-restart` is released under the MIT license. Please see the `LICENSE` file for full text.
