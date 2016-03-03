@@ -179,7 +179,11 @@ export default function restartable (driver, opts = {}) {
       newLog$.take(1).subscribe(newLog => {
         function scheduleEvent (historicEvent) {
           scheduler.scheduleAbsolute({}, historicEvent.time, () => {
-            streams[historicEvent.identifier].onNext(historicEvent.event);
+            if (streams[historicEvent.identifier]) {
+              streams[historicEvent.identifier].onNext(historicEvent.event);
+            } else {
+              console.error('Missing replay stream ', historicEvent.identifier)
+            }
           });
         }
 
