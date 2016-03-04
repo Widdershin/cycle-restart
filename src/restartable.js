@@ -141,7 +141,7 @@ export default function restartable (driver, opts = {}) {
     let filteredSink$ = sink$;
 
     if (sink$ && pauseSinksWhileReplaying) {
-      filteredSink$ = sink$.filter(_ => !replaying);
+      filteredSink$ = sink$.filter(() => !replaying);
     }
 
     const source = driver(filteredSink$);
