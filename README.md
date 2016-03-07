@@ -71,7 +71,29 @@ Webpack
 
 Have a look at the [webpack docs](https://github.com/webpack/docs/wiki/hot-module-replacement-with-webpack) for setting up hot module reloading.
 
-(If someone who is familiar with Webpack would like to write some docs here, it would be much appreciated).
+The minimum requirement to get HMR working with webpack config is first to add this 2 entry point to your `config.entry`
+
+```javascript
+entry: [
+    // The script refreshing the browser on none hot updates
+    'webpack-dev-server/client?http://localhost:8080',
+    'webpack/hot/dev-server', // For hot style updates
+    mainPath, // your actual entry
+  ]
+```
+
+and of course, the HMR plugin itself in `config.plugins`
+
+```javascript
+plugins: [new Webpack.HotModuleReplacementPlugin()]
+```
+
+Finally, run the command on the directory where your webpack config file is located. Defaults to `webpack.config.js`
+```bash
+webpack-dev-server --progress --colors --inline
+```
+
+For an example, look at https://github.com/FeliciousX/cyclejs-starter
 
 Supported drivers
 ---
