@@ -27,7 +27,7 @@ import {makeHTTPDriver} from '@cycle/http';
 
 import {restart, restartable} from 'cycle-restart';
 
-import app from './src/app';
+let app = require('./src/app').default;
 
 const drivers = {
   DOM: restartable(makeDOMDriver('.app'), {pauseSinksWhileReplaying: false}),
@@ -71,7 +71,7 @@ Webpack
 
 Have a look at the [webpack docs](https://github.com/webpack/docs/wiki/hot-module-replacement-with-webpack) for setting up hot module reloading.
 
-The minimum requirement to get HMR working with webpack config is first to add this 2 entry point to your `config.entry`
+The minimum requirement to get HMR working with webpack config is first to add these two entry points to your `config.entry`
 
 ```javascript
 entry: [
@@ -119,7 +119,7 @@ Isolate?
   import {makeHTTPDriver} from '@cycle/http';
 + import isolate from '@cycle/isolate';
 
-  import {restart, restartable} from 'cycle-restart';
+  let app = require('./src/app').default;
 
   import app from './src/app';
 
