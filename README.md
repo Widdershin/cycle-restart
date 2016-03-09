@@ -95,6 +95,10 @@ webpack-dev-server --progress --colors --inline
 
 For an example, look at https://github.com/FeliciousX/cyclejs-starter
 
+SystemJS
+---
+(If anyone who has experience with SystemJS could add some instructions about how to get set up, it would be greatly appreciated)
+
 Supported drivers
 ---
 
