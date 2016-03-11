@@ -6,6 +6,8 @@ The most annoying part about it is that it throws away your application state! S
 
 `cycle-restart` solves that problem for you! It records all the actions you perform and replays them after you change your code. Best part is that it happens in the blink of an eye!
 
+[edge/cyc](https://github.com/edge/cyc) is a great boilerplate project to help you get started with cycle-restart.
+
 Installation
 ---
 
