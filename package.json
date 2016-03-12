@@ -36,7 +36,7 @@
   "devDependencies": {
     "@cycle/dom": "^9.0.1",
     "@cycle/history": "^1.1.0",
-    "@cycle/http": "^7.0.0",
+    "@cycle/http": "^7.1.0",
     "@cycle/isolate": "^1.2.0",
     "@cycle/jsonp": "^5.0.0",
     "babel-cli": "^6.3.15",
