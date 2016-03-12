@@ -6,6 +6,8 @@ The most annoying part about it is that it throws away your application state! S
 
 `cycle-restart` solves that problem for you! It records all the actions you perform and replays them after you change your code. Best part is that it happens in the blink of an eye!
 
+[edge/cyc](https://github.com/edge/cyc) is a great boilerplate project to help you get started with cycle-restart.
+
 Installation
 ---
 
@@ -27,7 +29,7 @@ import {makeHTTPDriver} from '@cycle/http';
 
 import {restart, restartable} from 'cycle-restart';
 
-import app from './src/app';
+let app = require('./src/app').default;
 
 const drivers = {
   DOM: restartable(makeDOMDriver('.app'), {pauseSinksWhileReplaying: false}),
@@ -71,7 +73,33 @@ Webpack
 
 Have a look at the [webpack docs](https://github.com/webpack/docs/wiki/hot-module-replacement-with-webpack) for setting up hot module reloading.
 
-(If someone who is familiar with Webpack would like to write some docs here, it would be much appreciated).
+The minimum requirement to get HMR working with webpack config is first to add these two entry points to your `config.entry`
+
+```javascript
+entry: [
+    // The script refreshing the browser on none hot updates
+    'webpack-dev-server/client?http://localhost:8080',
+    'webpack/hot/dev-server', // For hot style updates
+    mainPath, // your actual entry
+  ]
+```
+
+and of course, the HMR plugin itself in `config.plugins`
+
+```javascript
+plugins: [new Webpack.HotModuleReplacementPlugin()]
+```
+
+Finally, run the command on the directory where your webpack config file is located. Defaults to `webpack.config.js`
+```bash
+webpack-dev-server --progress --colors --inline
+```
+
+For an example, look at https://github.com/FeliciousX/cyclejs-starter
+
+SystemJS
+---
+(If anyone who has experience with SystemJS could add some instructions about how to get set up, it would be greatly appreciated)
 
 Supported drivers
 ---
@@ -97,7 +125,7 @@ Isolate?
   import {makeHTTPDriver} from '@cycle/http';
 + import isolate from '@cycle/isolate';
 
-  import {restart, restartable} from 'cycle-restart';
+  let app = require('./src/app').default;
 
   import app from './src/app';
 
