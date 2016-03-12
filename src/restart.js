@@ -52,7 +52,7 @@ function restart (main, drivers, {sources, sinks}, isolate = {}, timeToTravelTo 
   return newSourcesAndSinks;
 }
 
-function rerunner (run, isolate = {}) {
+function rerunner (run, isolate) {
   let sourcesAndSinks = {};
   let first = true;
   return function(main, drivers, timeToTravelTo = null) {
