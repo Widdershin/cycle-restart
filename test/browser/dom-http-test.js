@@ -1,19 +1,18 @@
-
-/* globals describe, it, before, after */
+/* globals describe, it*/
 import assert from 'assert';
 import {run} from '@cycle/core';
-import {button, div, input, a, makeDOMDriver} from '@cycle/dom';
-
-const request = require('../../node_modules/@cycle/http/node_modules/superagent');
+import {button, div, a, makeDOMDriver} from '@cycle/dom';
 
 let requestCount = 0;
 let wikiRequest = 0;
+
+const request = require('../../node_modules/superagent');
 
 const config = [
   {
     pattern: '/(boo)',
 
-    fixtures: function (match, params, headers) {
+    fixtures: function (match) {
       requestCount += 1;
 
       return 'Hello, world! - ' + match[1];
@@ -26,7 +25,7 @@ const config = [
   {
     pattern: '/wikipedia/(.*)',
 
-    fixtures: function (match, params, headers) {
+    fixtures: function (match) {
       wikiRequest += 1;
 
       return {items: [{full_name: match[1], stargazers_count: 10}]};
@@ -42,7 +41,7 @@ const superagentMock = require('superagent-mock')(request, config);
 
 import {makeHTTPDriver} from '@cycle/http';
 
-import {restart, restartable} from '../../src/restart';
+import {rerunner, restartable} from '../../src/restart';
 
 import {Observable} from 'rx';
 
@@ -68,13 +67,13 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
 
     return {
       DOM: Observable.just(button('.click', 'Click me!')),
-      HTTP: click$.map(_ => '/boo'),
+      HTTP: click$.map(() => '/boo'),
       responses$
     };
   }
 
   it('replays responses', (done) => {
-    const {container, selector} = makeTestContainer();
+    const {selector} = makeTestContainer();
 
     const drivers = {
       HTTP: restartable(makeHTTPDriver({eager: true})),
@@ -83,7 +82,8 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
 
     assert.equal(requestCount, 0);
 
-    const {sources, sinks} = run(main, drivers);
+    let rerun = rerunner(run);
+    const {sinks} = rerun(main, drivers);
 
     setTimeout(() => {
       $('.click').click();
@@ -99,7 +99,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
           `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
         );
 
-        const restartedSinks = restart(main, drivers, {sources, sinks}).sinks;
+        const restartedSinks = rerun(main, drivers).sinks;
 
         restartedSinks.responses$.take(1).subscribe(text => {
           assert.equal(text, responseText);
@@ -125,11 +125,11 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
     requestCount = 0;
     assert.equal(requestCount, 0);
 
-    const {sources, sinks} = run(WikipediaSearchBox, drivers);
+    let rerun = rerunner(run);
+    const {sinks} = rerun(WikipediaSearchBox, drivers);
 
     setTimeout(() => {
       container.find('.search').click()
-      let responseText;
 
       sinks.results$.skip(1).take(1).subscribe(data => {
         assert.equal(data.items[0].full_name, 'woah');
@@ -139,7 +139,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
           `Expected requestCount to be 1 prior to restart, was ${wikiRequest}.`
         );
 
-        const restartedSinks = restart(WikipediaSearchBox, drivers, {sources, sinks}).sinks;
+        const restartedSinks = rerun(WikipediaSearchBox, drivers).sinks;
 
         restartedSinks.results$.skip(1).take(1).subscribe(newData => {
           assert.equal(newData.items[0].full_name, 'woah');
@@ -167,11 +167,11 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
     requestCount = 0;
     assert.equal(requestCount, 0);
 
-    const {sources, sinks} = run(WikipediaSearchBox, drivers);
+    let rerun = rerunner(run);
+    const {sinks} = rerun(WikipediaSearchBox, drivers);
 
     setTimeout(() => {
       container.find('.search').click()
-      let responseText;
 
       sinks.results$.skip(1).take(1).subscribe(data => {
         assert.equal(data.items[0].full_name, 'woah');
@@ -182,7 +182,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
         );
 
 
-        const restartedSinks = restart(WikipediaSearchBox, drivers, {sources, sinks}).sinks;
+        const restartedSinks = rerun(WikipediaSearchBox, drivers).sinks;
 
         restartedSinks.results$.skip(1).take(1).subscribe(newData => {
           assert.equal(newData.items[0].full_name, 'woah');
@@ -195,7 +195,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
           setTimeout(() => {
             container.find('.search').click();
 
-            restartedSinks.results$.skip(2).take(1).subscribe(newData => {
+            restartedSinks.results$.skip(2).take(1).subscribe(() => {
 
               assert.equal(
                 wikiRequest, 2,
@@ -230,7 +230,7 @@ function WikipediaSearchBox ({DOM, HTTP}) {
     .select('.search')
     .events('click')
     .debounce(100)
-    .map(ev => 'woah')
+    .map(() => 'woah')
 
   return {
     DOM: results$.map(results =>

@@ -1,5 +1,4 @@
-
-/* globals describe, it, before, after */
+/* globals describe, it*/
 const jsonpMock = function (url, cb) {
   requestCount += 1;
 
@@ -14,11 +13,9 @@ const {makeJSONPDriver} = proxyquire('@cycle/jsonp', {'jsonp': jsonpMock, '@noCa
 import assert from 'assert';
 import {run} from '@cycle/core';
 
-import {restart, restartable} from '../../src/restart';
+import {rerunner, restartable} from '../../src/restart';
 
 import {Observable} from 'rx';
-
-import $ from 'jquery';
 
 let requestCount = 0;
 
@@ -26,7 +23,7 @@ describe('restarting a cycle app that makes jsonp requests', () => {
   function main ({JSONP}) {
     const responses$ = JSONP.mergeAll();
 
-    const request$ = JSONP.flatMap(res$ => res$, (outer, inner) => {
+    const request$ = JSONP.flatMap(res$ => res$, outer => {
       return outer.request;
     });
 
@@ -44,7 +41,8 @@ describe('restarting a cycle app that makes jsonp requests', () => {
 
     assert.equal(requestCount, 0);
 
-    const {sources, sinks} = run(main, drivers);
+    let rerun = rerunner(run);
+    const {sinks} = rerun(main, drivers);
 
     setTimeout(() => {
       let responseText;
@@ -58,7 +56,7 @@ describe('restarting a cycle app that makes jsonp requests', () => {
           `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
         );
 
-        const restartedSinks = restart(main, drivers, {sources, sinks}).sinks;
+        const restartedSinks = rerun(main, drivers).sinks;
 
         restartedSinks.responses$.take(1).subscribe(text => {
           assert.equal(text, responseText);
@@ -78,12 +76,13 @@ describe('restarting a cycle app that makes jsonp requests', () => {
       JSONP: restartable(makeJSONPDriver())
     };
 
-    const {sources, sinks} = run(main, drivers);
+    let rerun = rerunner(run);
+    const {sinks} = rerun(main, drivers);
 
     sinks.request$.take(1).subscribe(text => {
       assert.equal('/hello', text);
 
-      restart(main, drivers, {sources, sinks}).sinks.request$.take(1).subscribe(request => {
+      rerun(main, drivers).sinks.request$.take(1).subscribe(request => {
         assert.equal('/hello', request);
 
         done();

@@ -1,11 +1,9 @@
-/* globals describe, it */
+/* globals describe, it*/
 import assert from 'assert';
 import {run} from '@cycle/core';
 import {makeDOMDriver, div, button} from '@cycle/dom';
 
-import {restart, restartable} from '../../src/restart';
-
-import {Observable} from 'rx';
+import {rerunner, restartable} from '../../src/restart';
 
 import $ from 'jquery';
 
@@ -27,7 +25,7 @@ describe('restarting a cycle app', () => {
     const count$ = DOM
       .select('.add')
       .events('click')
-      .map(_ => 1)
+      .map(() => 1)
       .scan((total, change) => total + change)
       .startWith(0);
 
@@ -45,7 +43,7 @@ describe('restarting a cycle app', () => {
     const count$ = DOM
       .select('.add')
       .events('click')
-      .map(_ => 2)
+      .map(() => 2)
       .scan((total, change) => total + change)
       .startWith(0);
 
@@ -66,7 +64,8 @@ describe('restarting a cycle app', () => {
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
     };
 
-    const {sources, sinks} = run(main, drivers);
+    let rerun = rerunner(run);
+    rerun(main, drivers);
 
     setTimeout(() => {
       container.find('.add').click();
@@ -79,7 +78,7 @@ describe('restarting a cycle app', () => {
 
         assert.equal(container.find('.count').text(), 3);
 
-        restart(newMain, drivers, {sources, sinks}, null, timeToResetTo);
+        rerun(newMain, drivers, timeToResetTo);
 
         setTimeout(() => {
           assert.equal(container.find('.count').text(), 4);

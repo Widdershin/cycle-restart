@@ -52,7 +52,23 @@ function restart (main, drivers, {sources, sinks}, isolate = {}, timeToTravelTo 
   return newSourcesAndSinks;
 }
 
+function rerunner (run, isolate = {}) {
+  let sourcesAndSinks = {};
+  let first = true;
+  return function(main, drivers, timeToTravelTo = null) {
+    if (first) {
+      sourcesAndSinks = run(main, drivers);
+      first = false;
+    }
+    else {
+      sourcesAndSinks = restart(main, drivers, sourcesAndSinks, isolate, timeToTravelTo);
+    }
+    return sourcesAndSinks;
+  }
+}
+
 module.exports = {
   restart,
-  restartable
+  restartable,
+  rerunner
 }
