@@ -125,23 +125,23 @@ Isolate?
   import {makeHTTPDriver} from '@cycle/http';
 + import isolate from '@cycle/isolate';
 
-  let app = require('./src/app').default;
+  import {rerunner, restartable} from 'cycle-restart';
 
-  import app from './src/app';
+  let app = require('./src/app').default;
 
   const drivers = {
     DOM: restartable(makeDOMDriver('.app'), {pauseSinksWhileReplaying: false}),
     HTTP: restartable(makeHTTPDriver())
   };
-
-  const {sinks, sources} = run(app, drivers);
+  
+- const rerun = rerunner(run);
++ const rerun = rerunner(run, isolate);
+  rerun(app, drivers);
 
   if (module.hot) {
     module.hot.accept('./src/app', () => {
       app = require('./src/app').default;
-
--     restart(app, drivers, {sinks, sources});
-+     restart(app, drivers, {sinks, sources}, isolate);
+      rerun(app, drivers);
     });
   }
 ```
