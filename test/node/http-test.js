@@ -5,7 +5,7 @@ import {makeHTTPDriver} from '@cycle/http';
 
 const http = require('http');
 
-import {restart, restartable} from '../../src/restart';
+import {rerunner, restartable} from '../../src/restart';
 
 import {Observable} from 'rx';
 
@@ -40,7 +40,8 @@ describe('restarting a cycle app that makes http requests', () => {
 
     assert.equal(requestCount, 0);
 
-    const {sources} = run(main, drivers);
+    let rerun = rerunner(run);
+    rerun(main, drivers);
 
     setTimeout(() => {
       assert.equal(
@@ -48,7 +49,7 @@ describe('restarting a cycle app that makes http requests', () => {
         `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
       );
 
-      restart(main, drivers, {sources});
+      rerun(main, drivers);
 
       setTimeout(() => {
         assert.equal(
@@ -70,7 +71,8 @@ describe('restarting a cycle app that makes http requests', () => {
 
     assert.equal(requestCount, 0);
 
-    const {sources, sinks} = run(main, drivers);
+    let rerun = rerunner(run);
+    const {sinks} = rerun(main, drivers);
 
     sinks.responses$.take(1).subscribe(text => {
       assert.equal(text, 'Hello, world! - 1');
@@ -80,7 +82,7 @@ describe('restarting a cycle app that makes http requests', () => {
         `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
       );
 
-      const restartedSinks = restart(main, drivers, {sources, sinks}).sinks;
+      const restartedSinks = rerun(main, drivers).sinks;
 
       restartedSinks.responses$.take(1).subscribe(text => {
         assert.equal(text, 'Hello, world! - 1');
@@ -114,12 +116,13 @@ describe('restarting a cycle app that makes http requests', () => {
 
     assert.equal(requestCount, 0);
 
-    const {sources, sinks} = run(requestMain, drivers);
+    let rerun = rerunner(run);
+    const {sinks} = rerun(requestMain, drivers);
 
     sinks.request$.take(1).subscribe(text => {
       assert.equal(text.url, 'localhost:8532/a');
 
-      const restartedSinks = restart(requestMain, drivers, {sources, sinks}).sinks;
+      const restartedSinks = rerun(requestMain, drivers).sinks;
 
       restartedSinks.request$.take(1).subscribe(text => {
         assert.equal(text.url, 'localhost:8532/a');

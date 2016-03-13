@@ -1,4 +1,4 @@
-/* globals describe, it, before, after */
+/* globals describe, it*/
 import assert from 'assert';
 import {restartable} from '../../src/restart';
 import {Observable, Subject, HistoricalScheduler} from 'rx';

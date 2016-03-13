@@ -1,17 +1,17 @@
-/* globals describe, it, before, after */
+/* globals describe, it*/
 import assert from 'assert';
 import {run} from '@cycle/core';
 import {makeHistoryDriver} from '@cycle/history';
 
-import {restart, restartable} from '../../src/restart';
+import {rerunner, restartable} from '../../src/restart';
 
-import {Observable, Subject} from 'rx';
+import {Subject} from 'rx';
 
 const testSubject = new Subject();
 
 describe('restarting a cycle app using a simple driver', () => {
   function main ({History}) {
-    const count$ = testSubject.map(_ => 1).scan((total, change) => total + change);
+    const count$ = testSubject.map(() => 1).scan((total, change) => total + change);
 
     return {
       History: count$.startWith(0).map(count => '/' + count),
@@ -24,14 +24,15 @@ describe('restarting a cycle app using a simple driver', () => {
       History: restartable(makeHistoryDriver(), {pauseSinksWhileReplaying: true})
     };
 
-    const {sources, sinks} = run(main, drivers);
+    let rerun = rerunner(run);
+    const {sinks} = rerun(main, drivers);
 
     sinks.location.skip(1).take(1).subscribe(({pathname}) => {
       assert.deepEqual(pathname, '/0');
 
-      const newSourcesAndSinks = restart(main, drivers, {sources, sinks});
+      const newSourcesAndSinks = rerun(main, drivers);
 
-      newSourcesAndSinks.sinks.location.skip(1).take(1).subscribe(count => {
+      newSourcesAndSinks.sinks.location.skip(1).take(1).subscribe(() => {
         assert.deepEqual(pathname, '/0');
 
         done();

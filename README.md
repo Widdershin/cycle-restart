@@ -27,7 +27,7 @@ import {run} from '@cycle/core';
 import {makeDOMDriver} from '@cycle/dom';
 import {makeHTTPDriver} from '@cycle/http';
 
-import {restart, restartable} from 'cycle-restart';
+import {rerunner, restartable} from 'cycle-restart';
 
 let app = require('./src/app').default;
 
@@ -36,13 +36,13 @@ const drivers = {
   HTTP: restartable(makeHTTPDriver())
 };
 
-const {sinks, sources} = run(app, drivers);
+let rerun = rerunner(run);
+rerun(app, drivers);
 
 if (module.hot) {
   module.hot.accept('./src/app', () => {
     app = require('./src/app').default;
-
-    restart(app, drivers, {sinks, sources});
+    rerun(app, drivers);
   });
 }
 ```

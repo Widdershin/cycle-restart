@@ -1,10 +1,10 @@
-/* globals describe, it */
+/* globals describe, it*/
 import assert from 'assert';
 import {run} from '@cycle/core';
 import {makeDOMDriver, div, button} from '@cycle/dom';
 import isolate from '@cycle/isolate';
 
-import {restart, restartable} from '../../src/restart';
+import {rerunner, restartable} from '../../src/restart';
 
 import {Observable} from 'rx';
 
@@ -29,12 +29,12 @@ describe('scoped components', () => {
       const add$ = DOM
         .select('.add')
         .events('click')
-        .map(_ => 1);
+        .map(() => 1);
 
       const subtract$ = DOM
         .select('.subtract')
         .events('click')
-        .map(_ => -1);
+        .map(() => -1);
 
       const count$ = add$.merge(subtract$)
         .scan((total, change) => total + change)
@@ -75,7 +75,8 @@ describe('scoped components', () => {
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
     };
 
-    const {sources, sinks} = run(main, drivers);
+    let rerun = rerunner(run, isolate);
+    rerun(main, drivers);
 
     setTimeout(() => {
       container.find('.add')[1].click();
@@ -84,7 +85,7 @@ describe('scoped components', () => {
 
       assert.equal(container.text(), '0+-3+-');
 
-      restart(main, drivers, {sources, sinks}, isolate);
+      rerun(main, drivers);
 
       setTimeout(() => {
         assert.equal(container.text(), '0+-3+-');
