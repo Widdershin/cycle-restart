@@ -134,15 +134,30 @@ export default function restartable (driver, opts = {}) {
   const streams = {};
 
   const pauseSinksWhileReplaying = opts.pauseSinksWhileReplaying === undefined ? true : opts.pauseSinksWhileReplaying;
+  const replayOnlyLastSink = opts.replayOnlyLastSink || false;
 
   let replaying;
+  const lastSinkEvent$ = new ReplaySubject(1);
+  const finishedReplay$ = new Subject();
 
   function restartableDriver (sink$) {
-    let filteredSink$ = sink$;
+    const filteredSink$ = new Subject();
 
-    if (sink$ && pauseSinksWhileReplaying) {
-      filteredSink$ = sink$.filter(() => !replaying);
+    if (sink$) {
+      if (replaying && replayOnlyLastSink)  {
+        lastSinkEvent$.sample(finishedReplay$).take(1).subscribe((event) => {
+          filteredSink$.onNext(event)
+        });
+      }
+
+      if (pauseSinksWhileReplaying) {
+        sink$.filter(() => !replaying).subscribe((ev) => filteredSink$.onNext(ev));
+      } else {
+        sink$.subscribe((ev) => filteredSink$.onNext(ev));
+      }
     }
+
+    filteredSink$.subscribe(lastSinkEvent$);
 
     const source = driver(filteredSink$);
 
@@ -193,6 +208,7 @@ export default function restartable (driver, opts = {}) {
 
     driver.onPostReplay = function () {
       replaying = false;
+      finishedReplay$.onNext();
     };
 
     return restartableDriver;
