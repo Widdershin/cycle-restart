@@ -1,7 +1,7 @@
 /* globals describe, it*/
 import assert from 'assert';
 import {restartable} from '../../src/restart';
-import {Observable, Subject, HistoricalScheduler} from 'rx';
+import {Observable, ReplaySubject, Subject, HistoricalScheduler} from 'rx';
 
 describe('restartable', () => {
   it('disposes cleanly', (done) => {
@@ -47,6 +47,64 @@ describe('restartable', () => {
     done();
   });
 
+  it('pauses sinks', (done) => {
+    let callCount = 0;
+    const call$ = new Subject();
+    const pause$ = new ReplaySubject();
+
+    pause$.onNext(true);
+
+    const testDriver = (call$) => call$.subscribe(() => callCount++)
+
+    restartable(testDriver, {pause$})(call$);
+
+    assert.equal(callCount, 0);
+
+    call$.onNext();
+
+    assert.equal(callCount, 1);
+
+    pause$.onNext(false);
+
+    call$.onNext();
+
+    assert.equal(callCount, 1);
+
+    done();
+  });
+
+  it('pauses sources', (done) => {
+    const source$ = new Subject;
+    const pause$ = new ReplaySubject();
+
+    pause$.onNext(true);
+
+    const testDriver = () => source$
+
+    const source = restartable(testDriver, {pause$})();
+
+    source.take(1).subscribe((val) => {
+      assert.equal(val, 1)
+    });
+
+    source.skip(1).take(1).subscribe((val) => {
+      assert.equal(3, val)
+    });
+
+    source$.onNext(1);
+
+    pause$.onNext(false);
+
+    setTimeout(() => {
+      source$.onNext(2);
+
+      pause$.onNext(true);
+
+      source$.onNext(3);
+
+      done();
+    }, 5);
+  });
   describe('sources.log$', () => {
     it('is observable', (done) => {
       const testSubject = new Subject();
