@@ -21,7 +21,7 @@ describe('drivers with costly sinks', () => {
     }
 
     const drivers = {
-      Foo: restartable(driver, {replayOnlyLastSink: true, pauseSinksWhileReplaying: false})
+      Foo: restartable(driver, {replayOnlyLastSink: true, pauseSinksWhileReplaying: true})
     };
 
     const {sinks, sources} = run(main, drivers);
