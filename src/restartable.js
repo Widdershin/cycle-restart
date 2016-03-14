@@ -50,7 +50,6 @@ function recordObservableSource ({streams, addLogEntry, pause$}, source) {
   const source$ = new ReplaySubject(1);
 
   streams[':root'] = source$;
-  
 
   const subscription = source.pausable(pause$.startWith(true)).subscribe(event => {
     if (typeof event.subscribe === 'function') {
@@ -135,23 +134,31 @@ export default function restartable (driver, opts = {}) {
   const streams = {};
 
   const pauseSinksWhileReplaying = opts.pauseSinksWhileReplaying === undefined ? true : opts.pauseSinksWhileReplaying;
-  const pause$ = opts.pause$ || Observable.just(true)
-
+  const pause$ = (opts.pause$ || Observable.empty()).startWith(true);
+  const replayOnlyLastSink = opts.replayOnlyLastSink || false;
 
   let replaying;
+  const lastSinkEvent$ = new ReplaySubject(1);
+  const finishedReplay$ = new Subject();
 
   function restartableDriver (sink$) {
-    let filteredSink$ = sink$;
+    const filteredSink$ = new Subject();
 
-    if (!sink$ || !sink$.subscribe) {
-      filteredSink$ = Observable.empty();
+    if (sink$) {
+      if (replaying && replayOnlyLastSink)  {
+        lastSinkEvent$.sample(finishedReplay$).take(1).subscribe((event) => {
+          filteredSink$.onNext(event);
+        });
+      }
+
+      if (pauseSinksWhileReplaying) {
+        sink$.filter(() => !replaying).pausable(pause$).subscribe((ev) => filteredSink$.onNext(ev));
+      } else {
+        sink$.pausable(pause$).subscribe((ev) => filteredSink$.onNext(ev));
+      }
     }
 
-    filteredSink$ = filteredSink$.pausable(pause$.startWith(true));
-
-    if (pauseSinksWhileReplaying) {
-      filteredSink$ = filteredSink$.filter(() => !replaying);
-    }
+    filteredSink$.subscribe(lastSinkEvent$);
 
     const source = driver(filteredSink$);
 
@@ -202,6 +209,7 @@ export default function restartable (driver, opts = {}) {
 
     driver.onPostReplay = function () {
       replaying = false;
+      finishedReplay$.onNext();
     };
 
     return restartableDriver;
