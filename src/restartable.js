@@ -55,11 +55,7 @@ function record ({streams, addLogEntry, pause$}, streamToRecord, identifier) {
 }
 
 function recordObservableSource ({streams, addLogEntry, pause$}, source) {
-  const source$ = new ReplaySubject(1);
-
-  streams[':root'] = source$;
-
-  const subscription = pausable(source, pause$.startWith(true)).subscribe(event => {
+  const source$ = source.compose(pausable(pause$.startWith(true))).debug(event => {
     if (typeof event.subscribe === 'function') {
       const loggedEvent$ = event.do(response => {
         addLogEntry({
@@ -76,13 +72,13 @@ function recordObservableSource ({streams, addLogEntry, pause$}, source) {
 
       source$.shamefullySendNext(loggedEvent$);
     } else {
-      source$.shamefullySendNext(event);
-
       addLogEntry({event, time: new Date(), identifier: ':root'});
+
+      return event;
     }
   });
 
-  onDispose(source$, () => subscription.dispose());
+  streams[':root'] = source$;
 
   return source$;
 }
@@ -183,7 +179,7 @@ export default function restartable (driver, opts = {}) {
 
     if (source === undefined || source === null) {
       return source;
-    } else if (typeof source.subscribe === 'function') {
+    } else if (typeof source.addListener === 'function') {
       returnValue = recordObservableSource({streams, addLogEntry, pause$}, source);
     } else {
       returnValue = wrapSource({streams, addLogEntry, pause$}, source);

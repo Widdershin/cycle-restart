@@ -6,6 +6,12 @@ import xstreamAdapter from '@cycle/xstream-adapter';
 
 import {restartable} from '../../src/restart';
 
+const shittyListener = {
+  next: () => {},
+  error: () => {},
+  complete: () => {}
+};
+
 describe('restartable', () => {
   // TODO - how to check if stream is disposed in xstream
   xit('disposes cleanly', (done) => {
@@ -81,22 +87,30 @@ describe('restartable', () => {
     done();
   });
 
-  xit('pauses sources', (done) => {
-    const source$ = xs.create;
+  it('pauses sources', (done) => {
+    const source$ = xs.create();
     const pause$ = xs.createWithMemory();
 
     pause$.shamefullySendNext(true);
 
-    const testDriver = () => source$
+    const testDriver = () => source$;
 
     const source = restartable(testDriver, {pause$})();
 
-    source.take(1).subscribe((val) => {
-      assert.equal(val, 1)
-    });
+    const expected = [1, 3];
 
-    source.skip(1).take(1).subscribe((val) => {
-      assert.equal(3, val)
+    source.take(expected.length).addListener({
+      next (ev) {
+        assert.equal(ev, expected.shift());
+      },
+
+      error (err) {
+        done(err);
+      },
+
+      complete () {
+        done();
+      }
     });
 
     source$.shamefullySendNext(1);
@@ -109,56 +123,82 @@ describe('restartable', () => {
       pause$.shamefullySendNext(true);
 
       source$.shamefullySendNext(3);
-
-      done();
     }, 5);
   });
+
   describe('sources.log$', () => {
-    xit('is observable', (done) => {
+    it('is observable', (done) => {
       const testSubject = xs.create();
       const testDriver = () => testSubject;
 
       const driver = restartable(testDriver)();
 
-      driver.log$.subscribe(log => {
-        assert.deepEqual(log, []);
-        done();
+      driver.log$.take(1).addListener({
+        next (log) {
+          assert.deepEqual(log, []);
+        },
+
+        error (err) {
+          done(err);
+        },
+
+        complete () {
+          done();
+        }
       });
     });
 
-    xit('emits updates', (done) => {
+    it('emits updates', (done) => {
       const testSubject = xs.create();
       const testDriver = () => testSubject;
 
       const driver = restartable(testDriver)();
+      driver.addListener(shittyListener);
 
-      driver.log$.take(1).subscribe(log => {
-        assert.deepEqual(log, []);
-      });
+      const expectations = [
+        log => assert.deepEqual(log, []),
+        log => {
+          const loggedEvent = log[0];
 
-      driver.log$.skip(1).take(1).subscribe(log => {
-        const loggedEvent = log[0];
+          assert.deepEqual(loggedEvent.identifier, ':root');
+          assert.deepEqual(loggedEvent.event, 'foo');
+        }
+      ];
 
-        assert.deepEqual(loggedEvent.identifier, ':root');
-        assert.deepEqual(loggedEvent.event, 'foo');
-        done();
+      driver.log$.take(expectations.length).addListener({
+        next (log) {
+          expectations.shift()(log);
+        },
+
+        error: done,
+
+        complete: done
       });
 
       testSubject.shamefullySendNext('foo');
     });
 
-    xit('shares the last value upon subscription', (done) => {
+    it('shares the last value upon subscription', (done) => {
       const testSubject = xs.create();
       const testDriver = () => testSubject;
 
       const driver = restartable(testDriver)();
+      driver.addListener(shittyListener);
 
       testSubject.shamefullySendNext('foo');
       testSubject.shamefullySendNext('foo');
 
-      driver.log$.subscribe(log => {
-        assert.equal(log.length, 2);
-        done();
+      const expectations = [
+        log => assert.deepEqual(log.length, 2)
+      ];
+
+      driver.log$.take(expectations.length).addListener({
+        next (log) {
+          expectations.shift()(log);
+        },
+
+        error: done,
+        complete: done
       });
     });
 
