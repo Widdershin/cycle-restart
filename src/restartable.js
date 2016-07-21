@@ -37,19 +37,13 @@ function onDispose (observable, disposeHandler) {
 }
 
 function record ({streams, addLogEntry, pause$}, streamToRecord, identifier) {
-  if (streams[identifier] === undefined) {
-    streams[identifier] = xs.create();
-  }
-
-  const stream = streams[identifier];
-
-  const subscription = pausable(streamToRecord, pause$.startWith(true)).subscribe(event => {
+  const stream = streamToRecord.compose(pausable(pause$.startWith(true))).debug(event => {
     addLogEntry({event, time: new Date(), identifier, stream});
 
-    stream.shamefullySendNext(event);
+    return event;
   });
 
-  onDispose(stream, () => subscription.dispose());
+  streams[identifier] = stream;
 
   return stream;
 }
@@ -93,7 +87,7 @@ function wrapSourceFunction ({streams, addLogEntry, pause$}, name, f, context, s
       return returnValue;
     }
 
-    if (typeof returnValue.subscribe !== 'function') {
+    if (typeof returnValue.addListener !== 'function') {
       return wrapSource({streams, addLogEntry, pause$}, returnValue, newScope);
     }
 

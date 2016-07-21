@@ -202,7 +202,7 @@ describe('restartable', () => {
       });
     });
 
-    xit('handles selector style drivers', (done) => {
+    it('handles selector style drivers', (done) => {
       const testSubject = xs.create();
       const testDriver = () => {
         return {
@@ -212,18 +212,27 @@ describe('restartable', () => {
 
       const driver = restartable(testDriver)();
 
-      driver.select('snaz');
+      driver.select('snaz').addListener(shittyListener);
 
       testSubject.shamefullySendNext('foo');
       testSubject.shamefullySendNext('foo');
 
-      driver.log$.subscribe(log => {
-        assert.equal(log[0].identifier, 'snaz');
-        assert.equal(log[0].event, 'foo');
+      const expectations = [
+        log => {
+          assert.equal(log[0].identifier, 'snaz');
+          assert.equal(log[0].event, 'foo');
 
-        assert.equal(log.length, 2);
+          assert.equal(log.length, 2);
+        }
+      ];
 
-        done();
+      driver.log$.take(expectations.length).addListener({
+        next (log) {
+          expectations.shift()(log);
+        },
+
+        error: done,
+        complete: done
       });
     });
   });
