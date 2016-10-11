@@ -10,8 +10,8 @@
     "test": "npm run test-node && npm run test-browser",
     "test-node": "mocha --compilers js:babel-core/register test/node/*",
     "autotest-node": "mocha --compilers js:babel-core/register --watch test/node/restartable-test.js",
-    "test-browser": "mochify --transform babelify --plugin proxyquireify/plugin test/browser/*",
-    "autotest-browser": "mochify --watch --transform babelify --plugin proxyquireify/plugin test/browser/*",
+    "test-browser": "mochify --transform babelify --plugin test/browser/*",
+    "autotest-browser": "mochify --watch --transform babelify test/browser/*",
     "precompile-lib": "rm -rf lib/ && mkdir -p lib",
     "compile-lib": "babel src -d lib",
     "prepublish": "npm run compile-lib"
@@ -51,9 +51,6 @@
     "jquery": "^2.1.4",
     "mocha": "^2.3.4",
     "mochify": "^2.14.3",
-    "proxyquire": "^1.7.3",
-    "proxyquire-universal": "^1.0.8",
-    "proxyquireify": "^3.0.1",
     "superagent-mock": "git://github.com/Widdershin/superagent-mock"
   },
   "dependencies": {

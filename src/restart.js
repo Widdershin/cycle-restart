@@ -1,10 +1,10 @@
-import {run} from '@cycle/core';
+import run from '@cycle/xstream-run';
 import Rx from 'rx';
+import xs from 'xstream';
 import restartable from './restartable';
 
-function restart (main, drivers, {sources, sinks}, isolate = {}, timeToTravelTo = null) {
-  sources.dispose();
-  sinks && sinks.dispose();
+function restart (main, drivers, {sources, sinks, dispose}, isolate = {}, timeToTravelTo = null) {
+  dispose();
 
   if (typeof isolate === 'function' && 'reset' in isolate) {
     isolate.reset();
@@ -52,18 +52,23 @@ function restart (main, drivers, {sources, sinks}, isolate = {}, timeToTravelTo 
   return newSourcesAndSinks;
 }
 
-function rerunner (run, isolate) {
-  let sourcesAndSinks = {};
+function rerunner (Cycle, isolate) {
+  let sourcesAndSinksAndDispose = {};
   let first = true;
   return function(main, drivers, timeToTravelTo = null) {
     if (first) {
-      sourcesAndSinks = run(main, drivers);
+      const {sources, sinks, run} = Cycle(main, drivers);
+
+      const dispose = run();
+
+      sourcesAndSinksAndDispose = {sources, sinks, dispose};
+
       first = false;
     }
     else {
-      sourcesAndSinks = restart(main, drivers, sourcesAndSinks, isolate, timeToTravelTo);
+      sourcesAndSinksAndDispose = restart(main, drivers, sourcesAndSinksAndDispose, isolate, timeToTravelTo);
     }
-    return sourcesAndSinks;
+    return sourcesAndSinksAndDispose;
   }
 }
 

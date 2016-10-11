@@ -12,6 +12,24 @@ const shittyListener = {
   complete: () => {}
 };
 
+function Scheduler () {
+  const state = {
+    queue: []
+  }
+
+  return {
+    queue: state.queue,
+    scheduleAbsolute (argument, time, f) {
+      state.queue.push({argument, time, f});
+    },
+    start () {
+      state.queue.sort((a, b) => a.time < b.time).forEach(entry => {
+        entry.f(entry.argument)
+      })
+    }
+  }
+}
+
 describe('restartable', () => {
   // TODO - how to check if stream is disposed in xstream
   xit('disposes cleanly', (done) => {
@@ -237,9 +255,9 @@ describe('restartable', () => {
     });
   });
 
-  xdescribe('replayLog', () => {
+  describe('replayLog', () => {
     it('schedules the events in the provided log$', (done) => {
-      const scheduler = new HistoricalScheduler();
+      const scheduler = Scheduler();
 
       const testSubject = xs.create();
       const testDriver = () => testSubject;
@@ -247,30 +265,45 @@ describe('restartable', () => {
 
       const driver = restartableTestDriver();
 
+      driver.drop(1).take(1).addListener({
+        next (val) {
+          assert.equal(val, 'snaz');
+          done();
+        },
+
+        error: done,
+        complete: () => {}
+      });
+
       testSubject.shamefullySendNext('snaz');
 
-      assert.equal(scheduler.queue.length, 0);
+      assert.equal(scheduler.queue.length, 0, 'schedule is empty to start');
 
       restartableTestDriver.replayLog(scheduler, driver.log$);
 
-      assert.equal(scheduler.queue.length, 1);
-
-      driver.skip(1).subscribe(val => {
-        assert.equal(val, 'snaz');
-        done();
-      });
+      assert.equal(scheduler.queue.length, 1, 'schedule has an event after replayLog');
 
       scheduler.start();
     });
 
     it('options takes a time to replay to', (done) => {
-      const scheduler = new HistoricalScheduler();
+      const scheduler = Scheduler();
 
       const testSubject = xs.create();
       const testDriver = () => testSubject;
       const restartableTestDriver = restartable(testDriver);
 
       const driver = restartableTestDriver();
+
+      driver.drop(2).take(1).addListener({
+        next (val) {
+          assert.equal(val, 'snaz');
+          done();
+        },
+
+        error: done,
+        complete: () => {}
+      });
 
       testSubject.shamefullySendNext('snaz');
 
@@ -281,11 +314,6 @@ describe('restartable', () => {
 
         setTimeout(() => {
           restartableTestDriver.replayLog(scheduler, driver.log$, timeToResetTo);
-
-          driver.compose(debounce(50)).subscribe(val => {
-            assert.equal(val, 'snaz');
-            done();
-          });
 
           scheduler.start();
         }, 50);

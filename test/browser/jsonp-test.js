@@ -1,4 +1,5 @@
 /* globals describe, it*/
+/*
 const jsonpMock = function (url, cb) {
   requestCount += 1;
 
@@ -90,3 +91,4 @@ describe('restarting a cycle app that makes jsonp requests', () => {
     });
   });
 });
+*/

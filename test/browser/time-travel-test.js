@@ -57,7 +57,7 @@ describe('restarting a cycle app', () => {
     };
   }
 
-  it('is possible', (done) => {
+  it('is posssible', (done) => {
     const {container, selector} = makeTestContainer();
 
     const drivers = {

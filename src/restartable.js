@@ -9,18 +9,18 @@ function pausable (pause$) {
 }
 
 function disposeAllStreams (streams) {
-  Object.keys(streams).forEach(key => {
+  keys(streams).forEach(key => {
     const value = streams[key];
 
     delete streams[key];
 
-    value.dispose();
+    value && value.dispose && value.dispose();
   });
 }
 
-function makeDispose ({streams}, originalDispose) {
+function makeDispose ({streams}, originalDispose, context) {
   return function dispose () {
-    originalDispose();
+    originalDispose.bind(context)();
     disposeAllStreams(streams);
   };
 }
@@ -97,14 +97,24 @@ function wrapSourceFunction ({streams, addLogEntry, pause$}, name, f, context, s
   };
 }
 
+function keys (obj) {
+  const _keys = [];
+
+  for (let prop in obj) {
+    _keys.push(prop);
+  }
+
+  return _keys;
+}
+
 function wrapSource ({streams, addLogEntry, pause$}, source, scope = []) {
   const returnValue = {};
 
-  Object.keys(source).forEach(key => {
+  keys(source).forEach(key => {
     const value = source[key];
 
     if (key === 'dispose') {
-      returnValue[key] = makeDispose({streams}, value);
+      returnValue[key] = makeDispose({streams}, value, source);
     } else if (typeof value === 'function') {
       returnValue[key] = wrapSourceFunction({streams, addLogEntry, pause$}, key, value, returnValue, scope);
     } else {
@@ -121,7 +131,21 @@ const shittyListener = {
   complete: () => {}
 };
 
+const log = (label) => ({
+  next: console.log.bind(console, label),
+  error: () => {},
+  complete: () => {}
+});
+
+const subscribe = (f) => ({
+  next: f,
+  error: () => {},
+  complete: () => {}
+});
+
+
 export default function restartable (driver, opts = {}) {
+  console.log(driver.name);
   const logEntry$ = xs.create();
   const log$ = logEntry$
     .fold((log, entry) => log.concat([entry]), [])
@@ -161,13 +185,13 @@ export default function restartable (driver, opts = {}) {
           complete: () => {}
         });
       } else {
-        sink$.compose(pausable(pause$)).subscribe((ev) => filteredSink$.shamefullySendNext(ev));
+        sink$.compose(pausable(pause$)).addListener(subscribe((ev) => filteredSink$.shamefullySendNext(ev)));
       }
     }
 
     // filteredSink$.subscribe(lastSinkEvent$);
 
-    const source = driver(filteredSink$);
+    const source = driver(filteredSink$, streamAdapter);
 
     let returnValue;
 
@@ -182,8 +206,8 @@ export default function restartable (driver, opts = {}) {
     const oldReturnValueDispose = returnValue.dispose;
 
     returnValue.dispose = function () {
-      oldReturnValueDispose && oldReturnValueDispose();
-      sink$ && sink$.dispose();
+      oldReturnValueDispose && oldReturnValueDispose.bind(returnValue)();
+      sink$ && sink$.dispose && sink$.dispose();
 
       disposeAllStreams(streams);
     }
@@ -199,19 +223,29 @@ export default function restartable (driver, opts = {}) {
     };
 
     driver.replayLog = function (scheduler, newLog$, timeToResetTo = null) {
-      newLog$.take(1).subscribe(newLog => {
-        function scheduleEvent (historicEvent) {
-          scheduler.scheduleAbsolute({}, historicEvent.time, () => {
-            if (streams[historicEvent.identifier]) {
-              streams[historicEvent.identifier].shamefullySendNext(historicEvent.event);
-            } else {
-              console.error('Missing replay stream ', historicEvent.identifier)
-            }
-          });
-        }
+      newLog$.take(1).addListener({
+        next: newLog => {
+          function scheduleEvent (historicEvent) {
+            scheduler.scheduleAbsolute({}, historicEvent.time, () => {
+              if (streams[historicEvent.identifier]) {
+                streams[historicEvent.identifier].shamefullySendNext(historicEvent.event);
+              } else {
+                console.error('Missing replay stream ', historicEvent.identifier)
+              }
+            });
+          }
 
-        newLog.filter(event => timeToResetTo === null || event.time <= timeToResetTo).forEach(scheduleEvent);
-      });
+          newLog.filter(event => timeToResetTo === null || event.time <= timeToResetTo).forEach(scheduleEvent);
+        },
+
+        error: (err) => {
+          console.error(err);
+        },
+
+        complete: () => {
+        }
+      })
+
     };
 
     driver.onPostReplay = function () {
