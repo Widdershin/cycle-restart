@@ -9,7 +9,7 @@
   "scripts": {
     "test": "npm run test-node && npm run test-browser",
     "test-node": "mocha --compilers js:babel-core/register test/node/*",
-    "autotest-node": "mocha --compilers js:babel-core/register --watch test/node/restartable-test.js",
+    "autotest-node": "mocha --compilers js:babel-core/register --watch test/node/expensive-drivers-test.js",
     "test-browser": "mochify --transform babelify test/browser/*",
     "autotest-browser": "mochify --watch --transform babelify test/browser/*",
     "precompile-lib": "rm -rf lib/ && mkdir -p lib",

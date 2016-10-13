@@ -1,35 +1,45 @@
 /* globals describe, it, before, after */
 import assert from 'assert';
-import {run} from '@cycle/core';
-import {restartable, restart} from '../../src/restart';
-import {Observable, Subject, HistoricalScheduler} from 'rx';
+import run from '@cycle/xstream-run';
+import {restartable, restart, rerunner} from '../../src/restart';
+import {HistoricalScheduler} from 'rx';
+import xs from 'xstream';
+
+const subscribe = (f) => ({
+  next: f,
+  error: () => {},
+  complete: () => {}
+});
 
 describe('drivers with costly sinks', () => {
-  it('optionally filters all but the last sink', (done) => {
+  it.only('optionally filters all but the last sink', (done) => {
     let callCount = 0;
 
     const driver = (sinks$) => {
-      sinks$.subscribe(_ => callCount++);
+      sinks$.addListener(subscribe(_ => {
+        callCount++
+      }));
 
-      return Observable.empty();
+      return xs.empty();
     };
 
     function main () {
       return {
-        Foo: Observable.range(1, 5)
+        Foo: xs.of(1, 2, 3, 4, 5)
       };
     }
 
-    const drivers = {
+    const driversFn = () => ({
       Foo: restartable(driver, {replayOnlyLastSink: true, pauseSinksWhileReplaying: true})
-    };
+    });
 
-    const {sinks, sources} = run(main, drivers);
+    const rerun = rerunner(run, driversFn);
+    rerun(main);
 
     setTimeout(() => {
       assert.equal(callCount, 5);
 
-      restart(main, drivers, {sinks, sources});
+      rerun(main);
 
       setTimeout(() => {
         assert.equal(callCount, 6);

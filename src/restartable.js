@@ -186,9 +186,9 @@ export default function restartable (driver, opts = {}) {
 
     if (sink$) {
       if (replaying && replayOnlyLastSink)  {
-        lastSinkEvent$.sample(finishedReplay$).take(1).subscribe((event) => {
+        lastSinkEvent$.map(lastEvent => finishedReplay$.mapTo(lastEvent)).flatten().take(1).addListener(subscribe((event) => {
           filteredSink$.shamefullySendNext(event);
-        });
+        }));
       }
 
       if (pauseSinksWhileReplaying) {
@@ -202,7 +202,7 @@ export default function restartable (driver, opts = {}) {
       }
     }
 
-    // filteredSink$.subscribe(lastSinkEvent$);
+    lastSinkEvent$.imitate(sink$);
 
     const source = driver(filteredSink$, streamAdapter);
 
@@ -260,7 +260,6 @@ export default function restartable (driver, opts = {}) {
         complete: () => {
         }
       })
-
     };
 
     driver.onPostReplay = function () {
