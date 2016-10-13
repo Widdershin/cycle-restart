@@ -10,7 +10,7 @@
     "test": "npm run test-node && npm run test-browser",
     "test-node": "mocha --compilers js:babel-core/register test/node/*",
     "autotest-node": "mocha --compilers js:babel-core/register --watch test/node/restartable-test.js",
-    "test-browser": "mochify --transform babelify --plugin test/browser/*",
+    "test-browser": "mochify --transform babelify test/browser/*",
     "autotest-browser": "mochify --watch --transform babelify test/browser/*",
     "precompile-lib": "rm -rf lib/ && mkdir -p lib",
     "compile-lib": "babel src -d lib",
@@ -35,7 +35,6 @@
   "homepage": "https://github.com/Widdershin/cycle-restart",
   "devDependencies": {
     "@cycle/core": "^7.0.0",
-    "@cycle/dom": "^10.1.0",
     "@cycle/history": "^1.1.0",
     "@cycle/http": "^9.0.3",
     "@cycle/isolate": "^1.4.0",
@@ -55,6 +54,7 @@
   },
   "dependencies": {
     "@cycle/core": "^6.0.0-rc2",
+    "@cycle/dom": "^12.2.7",
     "@cycle/xstream-run": "^3.0.3",
     "rx": "^4.0.7",
     "xstream": "^5.2.4"

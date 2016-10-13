@@ -18,7 +18,15 @@ function restart (main, drivers, {sources, sinks, dispose}, isolate = {}, timeTo
     }
   }
 
-  const newSourcesAndSinks = run(main, drivers);
+  const newSourcesSinksAndRun = run(main, drivers);
+
+  const newDispose = newSourcesSinksAndRun.run();
+
+  const sourcesAndSinksAndDispose = {
+    sources: newSourcesSinksAndRun.sources,
+    sinks: newSourcesSinksAndRun.sinks,
+    dispose: newDispose
+  };
 
   setTimeout(() => {
     const scheduler = new Rx.HistoricalScheduler();
@@ -47,9 +55,9 @@ function restart (main, drivers, {sources, sinks, dispose}, isolate = {}, timeTo
     });
 
     scheduler.start();
-  }, 1);
+  }, 50);
 
-  return newSourcesAndSinks;
+  return sourcesAndSinksAndDispose;
 }
 
 function rerunner (Cycle, isolate) {
