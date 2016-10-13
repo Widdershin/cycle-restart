@@ -58,12 +58,12 @@ describe('restarting a cycle app', () => {
   it.only('is possible', (done) => {
     let {container, selector} = makeTestContainer();
 
-    const drivers = {
+    const driversFn = () => ({
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
-    };
+    });
 
-    let rerun = rerunner(run);
-    rerun(main, drivers);
+    let rerun = rerunner(run, driversFn);
+    rerun(main);
 
     setTimeout(() => {
       container = $(selector);
@@ -75,9 +75,11 @@ describe('restarting a cycle app', () => {
 
       assert.equal(container.find('.count').text(), 3);
 
-      rerun(newMain, drivers);
+      rerun(newMain);
 
       setTimeout(() => {
+        container = $(selector);
+        console.log('assert')// ,document.body.innerHTML)
         assert.equal(container.find('.count').text(), 6);
 
         container.remove();

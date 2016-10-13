@@ -60,11 +60,14 @@ function restart (main, drivers, {sources, sinks, dispose}, isolate = {}, timeTo
   return sourcesAndSinksAndDispose;
 }
 
-function rerunner (Cycle, isolate) {
+function rerunner (Cycle, driversFn, isolate) {
   let sourcesAndSinksAndDispose = {};
   let first = true;
-  return function(main, drivers, timeToTravelTo = null) {
+  let drivers;
+  return function(main, timeToTravelTo = null) {
     if (first) {
+      drivers = driversFn();
+
       const {sources, sinks, run} = Cycle(main, drivers);
 
       const dispose = run();
@@ -74,6 +77,8 @@ function rerunner (Cycle, isolate) {
       first = false;
     }
     else {
+      drivers = driversFn();
+
       sourcesAndSinksAndDispose = restart(main, drivers, sourcesAndSinksAndDispose, isolate, timeToTravelTo);
     }
     return sourcesAndSinksAndDispose;
