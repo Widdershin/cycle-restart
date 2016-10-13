@@ -38,7 +38,7 @@ function onDispose (observable, disposeHandler) {
 
 function record ({streams, addLogEntry, pause$}, streamToRecord, identifier) {
   const stream = streamToRecord.compose(pausable(pause$.startWith(true))).debug(event => {
-    addLogEntry({event, time: new Date(), identifier, stream});
+    addLogEntry({event, time: new Date(), identifier, stream}); // TODO - stream is undefined and unused
 
     return event;
   });
@@ -159,7 +159,6 @@ export default function restartable (driver, opts = {}) {
 
   const log$ = logReducer$
     .fold((log, reducer) => reducer(log), [])
-    .debug((log) => console.log(name, 'log', log.length));
 
   function addLogEntry (entry) {
     logEntry$.shamefullySendNext(entry);

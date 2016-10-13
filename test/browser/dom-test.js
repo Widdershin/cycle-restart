@@ -4,6 +4,7 @@ import run from '@cycle/xstream-run';
 import {makeDOMDriver, div, button} from '@cycle/dom';
 
 import {rerunner, restartable} from '../../src/restart';
+import xs from 'xstream';
 
 import $ from 'jquery';
 
@@ -55,7 +56,7 @@ describe('restarting a cycle app', () => {
     };
   }
 
-  it.only('is possible', (done) => {
+  it('is possible', (done) => {
     let {container, selector} = makeTestContainer();
 
     const driversFn = () => ({
@@ -79,7 +80,6 @@ describe('restarting a cycle app', () => {
 
       setTimeout(() => {
         container = $(selector);
-        console.log('assert')// ,document.body.innerHTML)
         assert.equal(container.find('.count').text(), 6);
 
         container.remove();
@@ -111,7 +111,6 @@ describe('restarting a cycle app', () => {
         container = $(selector);
         assert.equal(container.find('.count').text(), 3, 'first run');
 
-        console.log('wowza')
         rerun(main);
 
         setTimeout(() => {
@@ -135,14 +134,14 @@ describe('restarting a cycle app', () => {
             done();
           }, 50);
         }, 50);
-      }, 50)
+      }, 50);
     }, 50);
   });
 });
 
 describe('restarting a cycle app with multiple streams', () => {
   it('works', (done) => {
-    const {container, selector} = makeTestContainer();
+    let {container, selector} = makeTestContainer();
 
     function main ({DOM}) {
       const add$ = DOM
@@ -155,9 +154,9 @@ describe('restarting a cycle app with multiple streams', () => {
         .events('click')
         .map(() => -1);
 
-      const count$ = add$.merge(subtract$)
-        .scan((total, change) => total + change)
-        .startWith(0);
+      const count$ = xs
+        .merge(add$, subtract$)
+        .fold((total, change) => total + change, 0);
 
       return {
         DOM: count$.map(count =>
@@ -170,14 +169,16 @@ describe('restarting a cycle app with multiple streams', () => {
       };
     }
 
-    const drivers = {
+    const driversFn = () => ({
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
-    };
+    });
 
-    let rerun = rerunner(run);
-    rerun(main, drivers);
+    let rerun = rerunner(run, driversFn);
+    rerun(main);
 
     setTimeout(() => {
+      container = $(selector);
+
       container.find('.add').click();
       container.find('.add').click();
       container.find('.add').click();
@@ -186,18 +187,19 @@ describe('restarting a cycle app with multiple streams', () => {
 
       container.find('.subtract').click();
       container.find('.subtract').click();
-      container.find('.subtract').click();
 
-      assert.equal(container.find('.count').text(), 0);
+      assert.equal(container.find('.count').text(), 1);
 
-      rerun(main, drivers);
+      rerun(main);
 
       setTimeout(() => {
-        assert.equal(container.find('.count').text(), 0);
+        container = $(selector);
+
+        assert.equal(container.find('.count').text(), 1);
 
         container.remove();
         done();
-      });
+      }, 50);
     });
   });
 });
