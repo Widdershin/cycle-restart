@@ -147,12 +147,26 @@ const subscribe = (f) => ({
 export default function restartable (driver, opts = {}) {
   console.log(driver.name);
   const logEntry$ = xs.create();
-  const log$ = logEntry$
-    .fold((log, entry) => log.concat([entry]), [])
-    .remember();
+  const logEntryReducer$ = logEntry$.map(entry => (log) => log.concat(entry));
+
+  const logReplace$ = xs.create();
+  const logReplaceReducer$ = logReplace$.map(newLog => (log) => newLog);
+
+  const logReducer$ = xs.merge(
+    logEntryReducer$,
+    logReplaceReducer$
+  )
+
+  const log$ = logReducer$
+    .fold((log, reducer) => reducer(log), [])
+    .debug((log) => console.log(name, 'log', log.length));
 
   function addLogEntry (entry) {
     logEntry$.shamefullySendNext(entry);
+  }
+
+  function replaceLog (newLog) {
+    logReplace$.shamefullySendNext(newLog);
   }
 
   // TODO - dispose log subscription
@@ -225,6 +239,8 @@ export default function restartable (driver, opts = {}) {
     driver.replayLog = function (scheduler, newLog$, timeToResetTo = null) {
       newLog$.take(1).addListener({
         next: newLog => {
+          console.log(`Replaying log with ${newLog.length} items`)
+          replaceLog(newLog);
           function scheduleEvent (historicEvent) {
             scheduler.scheduleAbsolute({}, historicEvent.time, () => {
               if (streams[historicEvent.identifier]) {

@@ -89,45 +89,54 @@ describe('restarting a cycle app', () => {
   });
 
   it('handles multiple restarts', (done) => {
-    const {container, selector} = makeTestContainer();
+    let {container, selector} = makeTestContainer();
 
-    const drivers = {
+    const driversFn = () => ({
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
-    };
+    });
 
-    let rerun = rerunner(run);
-    rerun(main, drivers);
+    let rerun = rerunner(run, driversFn);
+    rerun(main);
 
     assert.equal(container.find('.count').text(), 0);
 
     setTimeout(() => {
-      container.find('.add').click();
-      container.find('.add').click();
-      container.find('.add').click();
+      container = $(selector);
 
-      assert.equal(container.find('.count').text(), 3);
-
-      rerun(main, drivers);
+      container.find('.add').click();
+      container.find('.add').click();
+      container.find('.add').click();
 
       setTimeout(() => {
-        assert.equal(container.find('.count').text(), 3);
+        container = $(selector);
+        assert.equal(container.find('.count').text(), 3, 'first run');
 
-        container.find('.add').click();
-        container.find('.add').click();
-        container.find('.add').click();
-
-        assert.equal(container.find('.count').text(), 6);
-
-        rerun(main, drivers);
+        console.log('wowza')
+        rerun(main);
 
         setTimeout(() => {
+          container = $(selector);
+          assert.equal(container.find('.count').text(), 3);
+
+          container.find('.add').click();
+          container.find('.add').click();
+          container.find('.add').click();
+
           assert.equal(container.find('.count').text(), 6);
 
-          container.remove();
-          done();
-        });
-      });
-    });
+          rerun(main);
+
+          setTimeout(() => {
+            container = $(selector);
+
+            assert.equal(container.find('.count').text(), 6);
+
+            container.remove();
+            done();
+          }, 50);
+        }, 50);
+      }, 50)
+    }, 50);
   });
 });
 
