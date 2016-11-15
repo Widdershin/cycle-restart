@@ -37,7 +37,17 @@ function onDispose (observable, disposeHandler) {
 }
 
 function record ({streams, addLogEntry, pause$}, streamToRecord, identifier) {
-  const stream = streamToRecord.compose(pausable(pause$.startWith(true))).debug(event => {
+  const stream = streamToRecord.compose(pausable(pause$.startWith(true))).map(event => {
+    if (typeof event.subscribe === 'function') {
+      const eventStream = event.debug((innerEvent) => {
+        addLogEntry({event: xs.of(innerEvent), time: new Date(), identifier, stream});
+      });
+
+      eventStream.request = event.request;
+
+      return eventStream;
+    }
+
     addLogEntry({event, time: new Date(), identifier, stream}); // TODO - stream is undefined and unused
 
     return event;
@@ -132,7 +142,6 @@ const shittyListener = {
 };
 
 const log = (label) => ({
-  next: console.log.bind(console, label),
   error: () => {},
   complete: () => {}
 });
@@ -145,7 +154,6 @@ const subscribe = (f) => ({
 
 
 export default function restartable (driver, opts = {}) {
-  console.log(driver.name);
   const logEntry$ = xs.create();
   const logEntryReducer$ = logEntry$.map(entry => (log) => log.concat(entry));
 
@@ -231,15 +239,19 @@ export default function restartable (driver, opts = {}) {
   }
 
   function replayable (driver) {
+    var i = 0;
+
     driver.onPreReplay = function () {
       replaying = true;
     };
 
     driver.replayLog = function (scheduler, newLog$, timeToResetTo = null) {
+      let logToReplaceWith;
+
       newLog$.take(1).addListener({
         next: newLog => {
-          console.log(`Replaying log with ${newLog.length} items`)
-          replaceLog(newLog);
+          logToReplaceWith = newLog;
+
           function scheduleEvent (historicEvent) {
             scheduler.scheduleAbsolute({}, historicEvent.time, () => {
               if (streams[historicEvent.identifier]) {
@@ -258,6 +270,7 @@ export default function restartable (driver, opts = {}) {
         },
 
         complete: () => {
+          replaceLog(logToReplaceWith);
         }
       })
     };

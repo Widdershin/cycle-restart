@@ -9,7 +9,7 @@
   "scripts": {
     "test": "npm run test-node && npm run test-browser",
     "test-node": "mocha --compilers js:babel-core/register test/node/*",
-    "autotest-node": "mocha --compilers js:babel-core/register --watch test/node/expensive-drivers-test.js",
+    "autotest-node": "mocha --compilers js:babel-core/register --watch test/node/*",
     "test-browser": "mochify --transform babelify test/browser/*",
     "autotest-browser": "mochify --watch --transform babelify test/browser/*",
     "precompile-lib": "rm -rf lib/ && mkdir -p lib",
@@ -54,9 +54,10 @@
   },
   "dependencies": {
     "@cycle/core": "^6.0.0-rc2",
-    "@cycle/dom": "^12.2.7",
-    "@cycle/xstream-run": "^3.0.3",
+    "@cycle/dom": "^14.0.0",
+    "@cycle/xstream-adapter": "^3.0.4",
+    "@cycle/xstream-run": "^3.1.0",
     "rx": "^4.0.7",
-    "xstream": "^5.2.4"
+    "xstream": "^7.0.0"
   }
 }

@@ -1,13 +1,13 @@
 /* globals describe, it, before, after */
 import assert from 'assert';
-import {run} from '@cycle/core';
+import run from '@cycle/xstream-run';
 import {makeHTTPDriver} from '@cycle/http';
 
 const http = require('http');
 
 import {rerunner, restartable} from '../../src/restart';
 
-import {Observable} from 'rx';
+import xs from 'xstream';
 
 let requestCount = 0;
 
@@ -20,28 +20,31 @@ const server = http.createServer(function (req, res) {
 
 const PORT = 8532;
 
+
+// TODO make these tests work without the debug calls
+
 describe('restarting a cycle app that makes http requests', () => {
   before(() => server.listen(PORT));
   after(() => server.close());
 
   function main ({HTTP}) {
-    const responses$ = HTTP.mergeAll().map(res => res.text);
+    const responses$ = HTTP.select().debug(() => {}).flatten().map(res => res.text);
 
     return {
-      HTTP: Observable.just('localhost:8532/a'),
+      HTTP: xs.of('localhost:8532/a'),
       responses$: responses$
     };
   }
 
   it('only makes requests the first time', (done) => {
-    const drivers = {
+    const driversFn = () => ({
       HTTP: restartable(makeHTTPDriver({eager: true}))
-    };
+    });
 
     assert.equal(requestCount, 0);
 
-    let rerun = rerunner(run);
-    rerun(main, drivers);
+    let rerun = rerunner(run, driversFn);
+    rerun(main);
 
     setTimeout(() => {
       assert.equal(
@@ -49,7 +52,7 @@ describe('restarting a cycle app that makes http requests', () => {
         `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
       );
 
-      rerun(main, drivers);
+      rerun(main);
 
       setTimeout(() => {
         assert.equal(
@@ -62,19 +65,27 @@ describe('restarting a cycle app that makes http requests', () => {
     }, 50);
   });
 
-  it('replays responses', (done) => {
+  it('replays responses', (done) => {;
     requestCount = 0;
 
-    const drivers = {
+    const driversFn = () => ({
       HTTP: restartable(makeHTTPDriver())
-    };
+    });
 
     assert.equal(requestCount, 0);
 
-    let rerun = rerunner(run);
-    const {sinks} = rerun(main, drivers);
+    let rerun = rerunner(run, driversFn);
+    const {sinks} = rerun(main);
 
-    sinks.responses$.take(1).subscribe(text => {
+    const goodListener = (next) => ({
+      next,
+
+      error: done,
+
+      complete: () => {}
+    });
+
+    sinks.responses$.take(1).addListener(goodListener(text => {
       assert.equal(text, 'Hello, world! - 1');
 
       assert.equal(
@@ -82,27 +93,25 @@ describe('restarting a cycle app that makes http requests', () => {
         `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
       );
 
-      const restartedSinks = rerun(main, drivers).sinks;
 
-      restartedSinks.responses$.take(1).subscribe(text => {
-        assert.equal(text, 'Hello, world! - 1');
+      const restartedSinks = rerun(main).sinks;
+
+      restartedSinks.responses$.take(1).addListener(goodListener(text => {
         assert.equal(
           requestCount, 1,
           `Expected requestCount to be 1 after restart, was ${requestCount}.`
         );
 
         done();
-      });
-    });
+      }));
+    }));
   });
 
   function requestMain ({HTTP}) {
-    const request$ = HTTP.flatMap(res$ => res$, (outer, inner) => {
-      return inner.request;
-    });
+    const request$ = HTTP.select().debug(() => {}).flatten().map(res$ => res$.request)
 
     return {
-      HTTP: Observable.just('localhost:8532/a'),
+      HTTP: xs.of('localhost:8532/a'),
       request$
     };
   }
@@ -110,25 +119,33 @@ describe('restarting a cycle app that makes http requests', () => {
   it('has the request available on the response', (done) => {
     requestCount = 0;
 
-    const drivers = {
+    const driversFn = () => ({
       HTTP: restartable(makeHTTPDriver())
-    };
+    });
 
     assert.equal(requestCount, 0);
 
-    let rerun = rerunner(run);
-    const {sinks} = rerun(requestMain, drivers);
+    const goodListener = (next) => ({
+      next,
 
-    sinks.request$.take(1).subscribe(text => {
+      error: done,
+
+      complete: () => {}
+    });
+
+    let rerun = rerunner(run, driversFn);
+    const {sinks} = rerun(requestMain);
+
+    sinks.request$.take(1).addListener(goodListener(text => {
       assert.equal(text.url, 'localhost:8532/a');
 
-      const restartedSinks = rerun(requestMain, drivers).sinks;
+      const restartedSinks = rerun(requestMain).sinks;
 
-      restartedSinks.request$.take(1).subscribe(text => {
+      restartedSinks.request$.take(1).addListener(goodListener(text => {
         assert.equal(text.url, 'localhost:8532/a');
 
         done();
-      });
-    });
+      }));
+    }));
   });
 });
