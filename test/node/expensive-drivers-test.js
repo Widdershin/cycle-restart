@@ -12,7 +12,7 @@ const subscribe = (f) => ({
 });
 
 describe('drivers with costly sinks', () => {
-  it.only('optionally filters all but the last sink', (done) => {
+  it('optionally filters all but the last sink', (done) => {
     let callCount = 0;
 
     const driver = (sinks$) => {
