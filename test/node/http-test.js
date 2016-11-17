@@ -28,7 +28,7 @@ describe('restarting a cycle app that makes http requests', () => {
   after(() => server.close());
 
   function main ({HTTP}) {
-    const responses$ = HTTP.select().debug(() => {}).flatten().map(res => res.text);
+    const responses$ = HTTP.select().flatten().map(res => res.text).debug('response');
 
     return {
       HTTP: xs.of('localhost:8532/a'),

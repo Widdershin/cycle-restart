@@ -1,12 +1,12 @@
 /* globals describe, it*/
 import assert from 'assert';
-import {run} from '@cycle/core';
+import run from '@cycle/xstream-run';
 import {button, div, a, makeDOMDriver} from '@cycle/dom';
 
 let requestCount = 0;
 let wikiRequest = 0;
 
-const request = require('../../node_modules/superagent');
+const request = require('superagent');
 
 const config = [
   {
@@ -43,7 +43,8 @@ import {makeHTTPDriver} from '@cycle/http';
 
 import {rerunner, restartable} from '../../src/restart';
 
-import {Observable} from 'rx';
+import xs from 'xstream';
+import debounce from 'xstream/extra/debounce';
 
 import $ from 'jquery';
 
@@ -62,11 +63,11 @@ function makeTestContainer () {
 
 describe('restarting a cycle app that makes http requests trigged by dom events', () => {
   function main ({DOM, HTTP}) {
-    const responses$ = HTTP.mergeAll().map(res => res.text);
+    const responses$ = HTTP.select().flatten().map(res => res.text);
     const click$ = DOM.select('.click').events('click');
 
     return {
-      DOM: Observable.just(button('.click', 'Click me!')),
+      DOM: xs.of(button('.click', 'Click me!')),
       HTTP: click$.map(() => '/boo'),
       responses$
     };
@@ -75,138 +76,153 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
   it('replays responses', (done) => {
     const {selector} = makeTestContainer();
 
-    const drivers = {
+    const driversFn = () => ({
       HTTP: restartable(makeHTTPDriver({eager: true})),
       DOM: makeDOMDriver(selector)
-    };
+    });
 
     assert.equal(requestCount, 0);
 
-    let rerun = rerunner(run);
-    const {sinks} = rerun(main, drivers);
+    let rerun = rerunner(run, driversFn);
+    const {sinks} = rerun(main);
+
+    const err = (e) => {
+      done(new Error('test failed: ' + e.message));
+    }
 
     setTimeout(() => {
-      $('.click').click();
-
       let responseText;
 
-      sinks.responses$.take(1).subscribe(text => {
+      sinks.responses$.take(1).addListener({error: err, next: text => {
         responseText = text;
         assert.equal(text, 'Hello, world! - boo');
 
         assert.equal(
-          requestCount, 1,
-          `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
+          requestCount, 2,
+          `Expected requestCount to be 2 prior to restart, was ${requestCount}.`
         );
 
-        const restartedSinks = rerun(main, drivers).sinks;
+        const restartedSinks = rerun(main).sinks;
 
-        restartedSinks.responses$.take(1).subscribe(text => {
+        restartedSinks.responses$.take(1).addListener({error: err, next: text => {
           assert.equal(text, responseText);
           assert.equal(
-            requestCount, 1,
-            `Expected requestCount to be 1 after restart, was ${requestCount}.`
+            requestCount, 2,
+            `Expected requestCount to be 2 after restart, was ${requestCount}.`
           );
 
           done();
-        });
-      });
+        }});
+      }});
+
+      $('.click').click();
     }, 100);
   });
 
   it('handles more complex apps', (done) => {
-    const {container, selector} = makeTestContainer();
+    let {container, selector} = makeTestContainer();
 
-    const drivers = {
+    const driversFn = () => ({
       HTTP: restartable(makeHTTPDriver({eager: true})),
       DOM: makeDOMDriver(selector)
-    };
+    });
 
     requestCount = 0;
     assert.equal(requestCount, 0);
 
-    let rerun = rerunner(run);
-    const {sinks} = rerun(WikipediaSearchBox, drivers);
+    let rerun = rerunner(run, driversFn);
+    const {sinks} = rerun(WikipediaSearchBox);
+
+    const err = (e) => {
+      done(new Error('test failed: ' + e.message));
+    }
 
     setTimeout(() => {
-      container.find('.search').click()
-
-      sinks.results$.skip(1).take(1).subscribe(data => {
+      sinks.results$.drop(1).take(1).addListener({error: err, next: data => {
         assert.equal(data.items[0].full_name, 'woah');
 
         assert.equal(
-          wikiRequest, 1,
-          `Expected requestCount to be 1 prior to restart, was ${wikiRequest}.`
+          wikiRequest, 2,
+          `Expected requestCount to be 2 prior to restart, was ${wikiRequest}.`
         );
 
-        const restartedSinks = rerun(WikipediaSearchBox, drivers).sinks;
+        const restartedSinks = rerun(WikipediaSearchBox).sinks;
 
-        restartedSinks.results$.skip(1).take(1).subscribe(newData => {
+        restartedSinks.results$.drop(1).take(1).addListener({error: err, next: newData => {
           assert.equal(newData.items[0].full_name, 'woah');
 
           assert.equal(
-            wikiRequest, 1,
-            `Expected requestCount to be 1 after restart, was ${wikiRequest}.`
+            wikiRequest, 2,
+            `Expected requestCount to be 2 after restart, was ${wikiRequest}.`
           );
 
           done();
-        });
-      });
+        }});
+      }});
+
+      container = $(selector);
+      container.find('.search').click()
     });
   });
 
   it('allows making requests again after restart', (done) => {
     wikiRequest = 0;
-    const {container, selector} = makeTestContainer();
+    let {container, selector} = makeTestContainer();
 
-    const drivers = {
+    const driversFn = () => ({
       HTTP: restartable(makeHTTPDriver({eager: true})),
       DOM: makeDOMDriver(selector)
-    };
+    });
 
     requestCount = 0;
     assert.equal(requestCount, 0);
 
-    let rerun = rerunner(run);
-    const {sinks} = rerun(WikipediaSearchBox, drivers);
+    let rerun = rerunner(run, driversFn);
+    const {sinks} = rerun(WikipediaSearchBox);
+
+    const err = (e) => {
+      done(new Error('test failed: ' + e.message));
+    }
+
 
     setTimeout(() => {
+      container = $(selector);
       container.find('.search').click()
 
-      sinks.results$.skip(1).take(1).subscribe(data => {
+      sinks.results$.drop(1).take(1).addListener({error: err, next: data => {
         assert.equal(data.items[0].full_name, 'woah');
 
         assert.equal(
-          wikiRequest, 1,
-          `Expected requestCount to be 1 prior to restart, was ${wikiRequest}.`
+          wikiRequest, 2,
+          `Expected requestCount to be 2 prior to restart, was ${wikiRequest}.`
         );
 
+        const restartedSinks = rerun(WikipediaSearchBox).sinks;
 
-        const restartedSinks = rerun(WikipediaSearchBox, drivers).sinks;
-
-        restartedSinks.results$.skip(1).take(1).subscribe(newData => {
+        restartedSinks.results$.drop(1).take(1).addListener({error: err, next: newData => {
           assert.equal(newData.items[0].full_name, 'woah');
 
           assert.equal(
-            wikiRequest, 1,
-            `Expected requestCount to be 1 after restart, was ${wikiRequest}.`
+            wikiRequest, 2,
+            `Expected requestCount to be 2 after restart, was ${wikiRequest}.`
           );
 
           setTimeout(() => {
+            container = $(selector);
             container.find('.search').click();
 
-            restartedSinks.results$.skip(2).take(1).subscribe(() => {
+            restartedSinks.results$.drop(1).take(1).addListener({error: err, next: () => {
 
               assert.equal(
-                wikiRequest, 2,
-                `Expected requestCount to be 2 after more events performed post restart, was ${wikiRequest}.`
+                wikiRequest, 4,
+                `Expected requestCount to be 4 after more events performed post restart, was ${wikiRequest}.`
               );
 
               done();
-            })
+            }})
           }, 500);
-        });
-      });
+        }});
+      }});
     });
   });
 });
@@ -222,14 +238,14 @@ function sortedByStars (results) {
 
 function WikipediaSearchBox ({DOM, HTTP}) {
   const results$ = HTTP
-    .mergeAll()
-    .pluck('text')
+    .select().flatten()
+    .map(req => req.text)
     .startWith({items: []})
 
   const searchTerm$ = DOM
     .select('.search')
     .events('click')
-    .debounce(100)
+    .compose(debounce(100))
     .map(() => 'woah')
 
   return {

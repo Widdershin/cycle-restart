@@ -55,7 +55,7 @@ function record ({streams, addLogEntry, pause$}, streamToRecord, identifier) {
 
   streams[identifier] = stream;
 
-  return stream;
+  return stream.debug(() => {});
 }
 
 function recordObservableSource ({streams, addLogEntry, pause$}, source) {

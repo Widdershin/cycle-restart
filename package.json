@@ -36,7 +36,7 @@
   "devDependencies": {
     "@cycle/core": "^7.0.0",
     "@cycle/history": "^1.1.0",
-    "@cycle/http": "^9.0.3",
+    "@cycle/http": "^11.2.0",
     "@cycle/isolate": "^1.4.0",
     "@cycle/jsonp": "^5.0.0",
     "@cycle/xstream-adapter": "^3.0.2",
@@ -50,7 +50,7 @@
     "jquery": "^2.1.4",
     "mocha": "^2.3.4",
     "mochify": "^2.14.3",
-    "superagent-mock": "git://github.com/Widdershin/superagent-mock"
+    "superagent-mock": "^2.0.1"
   },
   "dependencies": {
     "@cycle/core": "^6.0.0-rc2",

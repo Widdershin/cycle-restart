@@ -20,7 +20,7 @@ function makeTestContainer () {
   return {container, selector: '.' + selector};
 }
 
-describe('restarting a cycle app', () => {
+xdescribe('restarting a cycle app', () => {
   function main ({DOM}) {
     const count$ = DOM
       .select('.add')
