@@ -9,7 +9,7 @@ import {Subject} from 'rx';
 
 const testSubject = new Subject();
 
-describe('restarting a cycle app using a simple driver', () => {
+xdescribe('restarting a cycle app using a simple driver', () => {
   function main ({History}) {
     const count$ = testSubject.map(() => 1).scan((total, change) => total + change);
 

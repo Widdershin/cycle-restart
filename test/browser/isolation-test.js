@@ -1,12 +1,12 @@
 /* globals describe, it*/
 import assert from 'assert';
-import {run} from '@cycle/core';
+import run from '@cycle/xstream-run';
 import {makeDOMDriver, div, button} from '@cycle/dom';
 import isolate from '@cycle/isolate';
 
 import {rerunner, restartable} from '../../src/restart';
 
-import {Observable} from 'rx';
+import xs from 'xstream';
 
 import $ from 'jquery';
 
@@ -29,16 +29,16 @@ describe('scoped components', () => {
       const add$ = DOM
         .select('.add')
         .events('click')
-        .map(() => 1);
+        .map(() => 1)
 
       const subtract$ = DOM
         .select('.subtract')
         .events('click')
         .map(() => -1);
 
-      const count$ = add$.merge(subtract$)
-        .scan((total, change) => total + change)
-        .startWith(0);
+      const count$ = xs
+        .merge(add$, subtract$)
+        .fold((total, change) => total + change, 0)
 
       return {
         DOM: count$.map(count =>
@@ -56,10 +56,9 @@ describe('scoped components', () => {
       const counter2 = isolate(Counter)({DOM});
 
       return {
-        DOM: Observable.combineLatest(
-          counter1.DOM,
-          counter2.DOM,
-          (counter1DOM, counter2DOM) => (
+        DOM: xs
+          .combine(counter1.DOM, counter2.DOM)
+          .map(([counter1DOM, counter2DOM]) => (
             div('.app', [
               counter1DOM,
               counter2DOM
@@ -69,36 +68,43 @@ describe('scoped components', () => {
       };
     }
 
-    const {container, selector} = makeTestContainer();
+    let {container, selector} = makeTestContainer();
 
-    const drivers = {
+    const driversFn = () => ({
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
-    };
+    });
 
-    let rerun = rerunner(run, isolate);
-    rerun(main, drivers);
+    const rerun = rerunner(run, driversFn, isolate);
+
+    rerun(main);
 
     setTimeout(() => {
+      container = $(selector);
       container.find('.add')[1].click();
       container.find('.add')[1].click();
       container.find('.add')[1].click();
 
-      assert.equal(container.text(), '0+-3+-');
-
-      rerun(main, drivers);
+      console.log(container.find('.add').length);
 
       setTimeout(() => {
         assert.equal(container.text(), '0+-3+-');
 
-        container.find('.add')[1].click();
-        container.find('.add')[1].click();
-        container.find('.add')[1].click();
+        rerun(main);
 
-        assert.equal(container.text(), '0+-6+-');
+        setTimeout(() => {
+          container = $(selector);
+          assert.equal(container.text(), '0+-3+-');
 
-        container.remove();
-        done();
-      });
+          container.find('.add')[1].click();
+          container.find('.add')[1].click();
+          container.find('.add')[1].click();
+
+          assert.equal(container.text(), '0+-6+-');
+
+          container.remove();
+          done();
+        }, 50);
+      })
     });
   });
 });
