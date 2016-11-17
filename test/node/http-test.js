@@ -21,14 +21,12 @@ const server = http.createServer(function (req, res) {
 const PORT = 8532;
 
 
-// TODO make these tests work without the debug calls
-
 describe('restarting a cycle app that makes http requests', () => {
   before(() => server.listen(PORT));
   after(() => server.close());
 
   function main ({HTTP}) {
-    const responses$ = HTTP.select().flatten().map(res => res.text).debug('response');
+    const responses$ = HTTP.select().flatten().map(res => res.text);
 
     return {
       HTTP: xs.of('localhost:8532/a'),
@@ -108,7 +106,7 @@ describe('restarting a cycle app that makes http requests', () => {
   });
 
   function requestMain ({HTTP}) {
-    const request$ = HTTP.select().debug(() => {}).flatten().map(res$ => res$.request)
+    const request$ = HTTP.select().flatten().map(res$ => res$.request)
 
     return {
       HTTP: xs.of('localhost:8532/a'),

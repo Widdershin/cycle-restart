@@ -84,8 +84,6 @@ describe('scoped components', () => {
       container.find('.add')[1].click();
       container.find('.add')[1].click();
 
-      console.log(container.find('.add').length);
-
       setTimeout(() => {
         assert.equal(container.text(), '0+-3+-');
 
