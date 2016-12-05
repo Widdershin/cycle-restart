@@ -34,7 +34,6 @@
   },
   "homepage": "https://github.com/Widdershin/cycle-restart",
   "devDependencies": {
-    "@cycle/core": "^7.0.0",
     "@cycle/history": "^1.1.0",
     "@cycle/http": "^11.2.0",
     "@cycle/isolate": "^1.4.0",
@@ -53,11 +52,10 @@
     "superagent-mock": "^2.0.1"
   },
   "dependencies": {
-    "@cycle/core": "^6.0.0-rc2",
-    "@cycle/dom": "^14.0.0",
+    "@cycle/dom": "^14.1.0",
     "@cycle/xstream-adapter": "^3.0.4",
-    "@cycle/xstream-run": "^3.1.0",
+    "@cycle/xstream-run": "^4.1.0",
     "rx": "^4.0.7",
-    "xstream": "^7.0.0"
+    "xstream": "^9.0.0"
   }
 }

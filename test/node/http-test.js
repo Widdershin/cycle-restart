@@ -59,8 +59,8 @@ describe('restarting a cycle app that makes http requests', () => {
         );
 
         done();
-      }, 50);
-    }, 50);
+      }, 500);
+    }, 500);
   });
 
   it('replays responses', (done) => {;
