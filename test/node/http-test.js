@@ -27,7 +27,7 @@ describe('restarting a cycle app that makes http requests', () => {
   after(() => server.close());
 
   function main ({HTTP}) {
-    const responses$ = HTTP.select().flatten().map(res => res.text).debug('response');
+    const responses$ = HTTP.select().flatten().map(res => res.text);
 
     return {
       HTTP: xs.of('localhost:8532/a').compose(delay(50)),
@@ -81,13 +81,10 @@ describe('restarting a cycle app that makes http requests', () => {
 
       error: done,
 
-      complete: () => {console.log('complete!')}
     });
 
-    console.log('starting to listen');
     sinks.responses$.take(1).addListener(goodListener(text => {
       assert.equal(text, 'Hello, world! - 1');
-      console.log('an event!', text);
 
       assert.equal(
         requestCount, 1,
@@ -96,9 +93,7 @@ describe('restarting a cycle app that makes http requests', () => {
 
       const restartedSinks = rerun(main).sinks;
 
-      console.log('rerunning!');
       restartedSinks.responses$.take(1).addListener(goodListener(text => {
-        console.log('after rerunning');
 
         assert.equal(
           requestCount, 1,
@@ -114,7 +109,7 @@ describe('restarting a cycle app that makes http requests', () => {
     const request$ = HTTP.select().flatten().map(res$ => res$.request)
 
     return {
-      HTTP: xs.of('localhost:8532/a'),
+      HTTP: xs.of('localhost:8532/a').compose(delay(50)),
       request$
     };
   }
