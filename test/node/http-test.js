@@ -2,6 +2,7 @@
 import assert from 'assert';
 import run from '@cycle/xstream-run';
 import {makeHTTPDriver} from '@cycle/http';
+import delay from 'xstream/extra/delay';
 
 const http = require('http');
 
@@ -26,10 +27,10 @@ describe('restarting a cycle app that makes http requests', () => {
   after(() => server.close());
 
   function main ({HTTP}) {
-    const responses$ = HTTP.select().flatten().map(res => res.text).remember();
+    const responses$ = HTTP.select().flatten().map(res => res.text).debug('response');
 
     return {
-      HTTP: xs.of('localhost:8532/a'),
+      HTTP: xs.of('localhost:8532/a').compose(delay(50)),
       responses$: responses$
     };
   }
@@ -80,21 +81,25 @@ describe('restarting a cycle app that makes http requests', () => {
 
       error: done,
 
-      complete: () => {}
+      complete: () => {console.log('complete!')}
     });
 
+    console.log('starting to listen');
     sinks.responses$.take(1).addListener(goodListener(text => {
       assert.equal(text, 'Hello, world! - 1');
+      console.log('an event!', text);
 
       assert.equal(
         requestCount, 1,
         `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
       );
 
-
       const restartedSinks = rerun(main).sinks;
 
+      console.log('rerunning!');
       restartedSinks.responses$.take(1).addListener(goodListener(text => {
+        console.log('after rerunning');
+
         assert.equal(
           requestCount, 1,
           `Expected requestCount to be 1 after restart, was ${requestCount}.`
