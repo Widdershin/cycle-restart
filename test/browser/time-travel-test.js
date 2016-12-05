@@ -1,6 +1,5 @@
 /* globals describe, it*/
 import assert from 'assert';
-import {run} from '@cycle/core';
 import {makeDOMDriver, div, button} from '@cycle/dom';
 
 import {rerunner, restartable} from '../../src/restart';
