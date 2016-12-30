@@ -239,8 +239,6 @@ export default function restartable (driver, opts = {}) {
   }
 
   function replayable (driver) {
-    var i = 0;
-
     driver.onPreReplay = function () {
       replaying = true;
     };
