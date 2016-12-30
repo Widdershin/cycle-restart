@@ -192,21 +192,23 @@ export default function restartable (driver, opts = {}) {
   const replayOnlyLastSink = opts.replayOnlyLastSink || false;
 
   let replaying;
-  const lastSinkEvent$ = xs.createWithMemory();
+  const isReplaying = () => replaying;
+  const setReplaying = (newReplaying) => replaying = newReplaying;
   const finishedReplay$ = xs.create();
 
   function restartableDriver (sink$, streamAdapter) {
     const filteredSink$ = xs.create();
+    const lastSinkEvent$ = xs.createWithMemory();
 
     if (sink$) {
-      if (replaying && replayOnlyLastSink)  {
+      if (isReplaying() && replayOnlyLastSink)  {
         lastSinkEvent$.map(lastEvent => finishedReplay$.mapTo(lastEvent)).flatten().take(1).addListener(subscribe((event) => {
           filteredSink$.shamefullySendNext(event);
         }));
       }
 
       if (pauseSinksWhileReplaying) {
-        sink$.compose(pausable(pause$)).filter(() => !replaying).addListener({
+        sink$.compose(pausable(pause$)).filter(() => !isReplaying()).addListener({
           next: (ev) => filteredSink$.shamefullySendNext(ev),
           error: (err) => console.error(err),
           complete: () => {}
@@ -246,7 +248,7 @@ export default function restartable (driver, opts = {}) {
 
   function replayable (driver) {
     driver.onPreReplay = function () {
-      replaying = true;
+      setReplaying(true);
     };
 
     driver.replayLog = function (scheduler, newLog$, timeToResetTo = null) {
@@ -280,11 +282,11 @@ export default function restartable (driver, opts = {}) {
     };
 
     driver.onPostReplay = function () {
-      replaying = false;
+      setReplaying(false);
       finishedReplay$.shamefullySendNext();
     };
 
-    return restartableDriver;
+    return driver;
   }
 
   return replayable(restartableDriver);
