@@ -135,23 +135,11 @@ function wrapSource ({streams, addLogEntry, pause$}, source, scope = []) {
   return returnValue;
 }
 
-const shittyListener = {
-  next: () => {},
-  error: () => {},
-  complete: () => {}
-};
-
-const log = (label) => ({
-  error: () => {},
-  complete: () => {}
-});
-
 const subscribe = (f) => ({
   next: f,
-  error: () => {},
+  error: (err) => console.error(err),
   complete: () => {}
 });
-
 
 function createLog$() {
   const logEntry$ = xs.create();
@@ -176,14 +164,13 @@ function createLog$() {
     logReplace$.shamefullySendNext(newLog);
   }
 
-
   return {log$, addLogEntry, replaceLog};
 }
 
 export default function restartable (driver, opts = {}) {
   const {log$, addLogEntry, replaceLog} = createLog$();
   // TODO - dispose log subscription
-  log$.addListener(shittyListener);
+  log$.addListener(subscribe(() => {}));
 
   const streams = {};
 
