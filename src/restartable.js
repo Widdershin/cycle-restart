@@ -153,7 +153,7 @@ const subscribe = (f) => ({
 });
 
 
-export default function restartable (driver, opts = {}) {
+function createLog$() {
   const logEntry$ = xs.create();
   const logEntryReducer$ = logEntry$.map(entry => (log) => log.concat(entry));
 
@@ -176,6 +176,12 @@ export default function restartable (driver, opts = {}) {
     logReplace$.shamefullySendNext(newLog);
   }
 
+
+  return {log$, addLogEntry, replaceLog};
+}
+
+export default function restartable (driver, opts = {}) {
+  const {log$, addLogEntry, replaceLog} = createLog$();
   // TODO - dispose log subscription
   log$.addListener(shittyListener);
 
