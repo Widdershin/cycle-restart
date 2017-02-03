@@ -7,7 +7,7 @@ import {mockTimeSource} from '@cycle/time';
 
 import {restartable} from '../../src/restart';
 
-const shittyListener = {
+const blankListener = {
   next: () => {},
   error: () => {},
   complete: () => {}
@@ -159,7 +159,7 @@ describe('restartable', () => {
       const testDriver = () => testSubject;
 
       const driver = restartable(testDriver)();
-      driver.addListener(shittyListener);
+      driver.addListener(blankListener);
 
       const expectations = [
         log => assert.deepEqual(log, []),
@@ -189,7 +189,7 @@ describe('restartable', () => {
       const testDriver = () => testSubject;
 
       const driver = restartable(testDriver)();
-      driver.addListener(shittyListener);
+      driver.addListener(blankListener);
 
       testSubject.shamefullySendNext('foo');
       testSubject.shamefullySendNext('foo');
@@ -218,7 +218,7 @@ describe('restartable', () => {
 
       const driver = restartable(testDriver)();
 
-      driver.select('snaz').addListener(shittyListener);
+      driver.select('snaz').addListener(blankListener);
 
       testSubject.shamefullySendNext('foo');
       testSubject.shamefullySendNext('foo');
