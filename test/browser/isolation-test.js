@@ -76,33 +76,28 @@ describe('scoped components', () => {
 
     const rerun = rerunner(run, driversFn, isolate);
 
-    rerun(main);
-
-    setTimeout(() => {
+    rerun(main, () => {
       container = $(selector);
       container.find('.add')[1].click();
       container.find('.add')[1].click();
       container.find('.add')[1].click();
 
-      setTimeout(() => {
+      assert.equal(container.text(), '0+-3+-');
+
+
+      rerun(main, () => {
+        container = $(selector);
         assert.equal(container.text(), '0+-3+-');
 
-        rerun(main);
+        container.find('.add')[1].click();
+        container.find('.add')[1].click();
+        container.find('.add')[1].click();
 
-        setTimeout(() => {
-          container = $(selector);
-          assert.equal(container.text(), '0+-3+-');
+        assert.equal(container.text(), '0+-6+-');
 
-          container.find('.add')[1].click();
-          container.find('.add')[1].click();
-          container.find('.add')[1].click();
-
-          assert.equal(container.text(), '0+-6+-');
-
-          container.remove();
-          done();
-        }, 50);
-      })
+        container.remove();
+        done();
+      });
     });
   });
 });

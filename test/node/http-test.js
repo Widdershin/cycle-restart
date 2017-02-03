@@ -21,6 +21,7 @@ const server = http.createServer(function (req, res) {
 
 const PORT = 8532;
 
+server.listen(PORT);
 
 describe('restarting a cycle app that makes http requests', () => {
   before(() => server.listen(PORT));
@@ -29,8 +30,10 @@ describe('restarting a cycle app that makes http requests', () => {
   function main ({HTTP}) {
     const responses$ = HTTP.select().flatten().map(res => res.text);
 
+    responses$.addListener({next () {}}); // TODO - fix this
+
     return {
-      HTTP: xs.of('localhost:8532/a').compose(delay(50)),
+      HTTP: xs.of('localhost:8532/a'),
       responses$: responses$
     };
   }
@@ -43,25 +46,24 @@ describe('restarting a cycle app that makes http requests', () => {
     assert.equal(requestCount, 0);
 
     let rerun = rerunner(run, driversFn);
-    rerun(main);
-
-    setTimeout(() => {
-      assert.equal(
-        requestCount, 1,
-        `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
-      );
-
-      rerun(main);
+    rerun(main, () => {
 
       setTimeout(() => {
         assert.equal(
           requestCount, 1,
-          `Expected requestCount to be 1 after restart, was ${requestCount}.`
+          `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
         );
 
-        done();
-      }, 500);
-    }, 500);
+        rerun(main, () => {
+          assert.equal(
+            requestCount, 1,
+            `Expected requestCount to be 1 after restart, was ${requestCount}.`
+          );
+
+          done();
+        });
+      }, 20);
+    });
   });
 
   it('replays responses', (done) => {;
@@ -80,7 +82,6 @@ describe('restarting a cycle app that makes http requests', () => {
       next,
 
       error: done,
-
     });
 
     sinks.responses$.take(1).addListener(goodListener(text => {

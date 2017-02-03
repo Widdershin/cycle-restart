@@ -64,9 +64,7 @@ describe('restarting a cycle app', () => {
     });
 
     let rerun = rerunner(run, driversFn);
-    rerun(main);
-
-    setTimeout(() => {
+    rerun(main, () => {
       container = $(selector);
       assert.equal(container.find('.count').text(), 0);
 
@@ -76,16 +74,14 @@ describe('restarting a cycle app', () => {
 
       assert.equal(container.find('.count').text(), 3);
 
-      rerun(newMain);
-
-      setTimeout(() => {
+      rerun(newMain, () => {
         container = $(selector);
         assert.equal(container.find('.count').text(), 6);
 
         container.remove();
         done();
-      }, 50);
-    }, 50);
+      });
+    });
   });
 
   it('handles multiple restarts', (done) => {
@@ -96,46 +92,38 @@ describe('restarting a cycle app', () => {
     });
 
     let rerun = rerunner(run, driversFn);
-    rerun(main);
 
-    assert.equal(container.find('.count').text(), 0);
+    rerun(main, () => {
+      assert.equal(container.find('.count').text(), 0);
 
-    setTimeout(() => {
       container = $(selector);
 
       container.find('.add').click();
       container.find('.add').click();
       container.find('.add').click();
 
-      setTimeout(() => {
+      assert.equal(container.find('.count').text(), 3, 'first run');
+
+      rerun(main, () => {
         container = $(selector);
-        assert.equal(container.find('.count').text(), 3, 'first run');
+        assert.equal(container.find('.count').text(), 3);
 
-        rerun(main);
+        container.find('.add').click();
+        container.find('.add').click();
+        container.find('.add').click();
 
-        setTimeout(() => {
+        assert.equal(container.find('.count').text(), 6);
+
+        rerun(main, () => {
           container = $(selector);
-          assert.equal(container.find('.count').text(), 3);
-
-          container.find('.add').click();
-          container.find('.add').click();
-          container.find('.add').click();
 
           assert.equal(container.find('.count').text(), 6);
 
-          rerun(main);
-
-          setTimeout(() => {
-            container = $(selector);
-
-            assert.equal(container.find('.count').text(), 6);
-
-            container.remove();
-            done();
-          }, 50);
-        }, 50);
-      }, 50);
-    }, 50);
+          container.remove();
+          done();
+        });
+      });
+    });
   });
 });
 
@@ -174,9 +162,7 @@ describe('restarting a cycle app with multiple streams', () => {
     });
 
     let rerun = rerunner(run, driversFn);
-    rerun(main);
-
-    setTimeout(() => {
+    rerun(main, () => {
       container = $(selector);
 
       container.find('.add').click();
@@ -190,16 +176,14 @@ describe('restarting a cycle app with multiple streams', () => {
 
       assert.equal(container.find('.count').text(), 1);
 
-      rerun(main);
-
-      setTimeout(() => {
+      rerun(main, () => {
         container = $(selector);
 
         assert.equal(container.find('.count').text(), 1);
 
         container.remove();
         done();
-      }, 50);
+      });
     });
   });
 });

@@ -2,7 +2,6 @@
 import assert from 'assert';
 import run from '@cycle/xstream-run';
 import {restartable, restart, rerunner} from '../../src/restart';
-import {HistoricalScheduler} from 'rx';
 import xs from 'xstream';
 
 const subscribe = (f) => ({
@@ -34,18 +33,14 @@ describe('drivers with costly sinks', () => {
     });
 
     const rerun = rerunner(run, driversFn);
-    rerun(main);
-
-    setTimeout(() => {
+    rerun(main, () => {
       assert.equal(callCount, 5);
 
-      rerun(main);
-
-      setTimeout(() => {
+      rerun(main, () => {
         assert.equal(callCount, 6);
 
         done();
-      }, 600);
-    }, 1);
+      });
+    });
   });
 });

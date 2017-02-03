@@ -64,28 +64,21 @@ xdescribe('restarting a cycle app', () => {
     };
 
     let rerun = rerunner(run);
-    rerun(main, drivers);
-
-    setTimeout(() => {
+    rerun(main, drivers, () => {
       container.find('.add').click();
       container.find('.add').click();
 
       const timeToResetTo = new Date();
 
-      setTimeout(() => {
-        container.find('.add').click();
+      container.find('.add').click();
+      assert.equal(container.find('.count').text(), 3);
 
-        assert.equal(container.find('.count').text(), 3);
+      rerun(newMain, drivers, () => {
+        assert.equal(container.find('.count').text(), 4);
 
-        rerun(newMain, drivers, timeToResetTo);
-
-        setTimeout(() => {
-          assert.equal(container.find('.count').text(), 4);
-
-          container.remove();
-          done();
-        });
-      });
+        container.remove();
+        done();
+      }, timeToResetTo);
     });
   });
 });

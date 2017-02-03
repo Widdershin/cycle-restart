@@ -238,7 +238,7 @@ export default function restartable (driver, opts = {}) {
       setReplaying(true);
     };
 
-    driver.replayLog = function (scheduler, newLog$, timeToResetTo = null) {
+    driver.replayLog = function (schedule, newLog$, timeToResetTo = null) {
       let logToReplaceWith;
 
       newLog$.take(1).addListener({
@@ -246,13 +246,13 @@ export default function restartable (driver, opts = {}) {
           logToReplaceWith = newLog;
 
           function scheduleEvent (historicEvent) {
-            scheduler.scheduleAbsolute({}, historicEvent.time, () => {
-              if (streams[historicEvent.identifier]) {
-                streams[historicEvent.identifier].shamefullySendNext(historicEvent.event);
-              } else {
-                console.error('Missing replay stream ', historicEvent.identifier)
-              }
-            });
+            const stream = streams[historicEvent.identifier];
+
+            if (stream) {
+              schedule.next(stream, historicEvent.time, historicEvent.event);
+            } else {
+              console.error('Missing replay stream ', historicEvent.identifier)
+            }
           }
 
           newLog.filter(event => timeToResetTo === null || event.time <= timeToResetTo).forEach(scheduleEvent);

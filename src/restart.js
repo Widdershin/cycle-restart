@@ -1,9 +1,9 @@
 import run from '@cycle/xstream-run';
-import Rx from 'rx';
 import xs from 'xstream';
 import restartable from './restartable';
+import {mockTimeSource} from '@cycle/time';
 
-function restart (main, drivers, {sources, sinks, dispose}, isolate = {}, timeToTravelTo = null) {
+function restart (main, drivers, cb, {sources, sinks, dispose}, isolate = {}, timeToTravelTo = null) {
   dispose();
 
   if (typeof isolate === 'function' && 'reset' in isolate) {
@@ -28,34 +28,33 @@ function restart (main, drivers, {sources, sinks, dispose}, isolate = {}, timeTo
     dispose: newDispose
   };
 
-  setTimeout(() => {
-    const scheduler = new Rx.HistoricalScheduler();
+  const Time = mockTimeSource();
+
+  for (let driverName in drivers) {
+    const driver = drivers[driverName];
+
+    if (driver.replayLog) {
+      const log$ = sources[driverName].log$;
+
+      driver.replayLog(Time._scheduler, log$, timeToTravelTo);
+    }
+  }
+
+  Time.run((err) => {
+    if (err) {
+      throw err;
+    }
 
     for (let driverName in drivers) {
       const driver = drivers[driverName];
 
-      if (driver.replayLog) {
-        const log$ = sources[driverName].log$;
-
-        driver.replayLog(scheduler, log$, timeToTravelTo);
+      if (driver.onPostReplay) {
+        driver.onPostReplay();
       }
+
+      setTimeout(() => cb(err));
     }
-
-    scheduler.scheduleAbsolute({}, new Date(), () => {
-      // TODO - remove this setTimeout, figure out how to tell when an async app is booted
-      setTimeout(() => {
-        for (let driverName in drivers) {
-          const driver = drivers[driverName];
-
-          if (driver.onPostReplay) {
-            driver.onPostReplay();
-          }
-        }
-      }, 500);
-    });
-
-    scheduler.start();
-  }, 50);
+  });
 
   return sourcesAndSinksAndDispose;
 }
@@ -64,7 +63,9 @@ function rerunner (Cycle, driversFn, isolate) {
   let sourcesAndSinksAndDispose = {};
   let first = true;
   let drivers;
-  return function(main, timeToTravelTo = null) {
+  function noop () {}
+
+  return function(main, cb = noop, timeToTravelTo = null) {
     if (first) {
       drivers = driversFn();
 
@@ -75,11 +76,13 @@ function rerunner (Cycle, driversFn, isolate) {
       sourcesAndSinksAndDispose = {sources, sinks, dispose};
 
       first = false;
+
+      setTimeout(() => cb());
     }
     else {
       drivers = driversFn();
 
-      sourcesAndSinksAndDispose = restart(main, drivers, sourcesAndSinksAndDispose, isolate, timeToTravelTo);
+      sourcesAndSinksAndDispose = restart(main, drivers, cb, sourcesAndSinksAndDispose, isolate, timeToTravelTo);
     }
     return sourcesAndSinksAndDispose;
   }

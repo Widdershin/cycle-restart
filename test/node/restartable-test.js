@@ -3,6 +3,7 @@ import assert from 'assert';
 import xs from 'xstream';
 import debounce from 'xstream/extra/debounce';
 import xstreamAdapter from '@cycle/xstream-adapter';
+import {mockTimeSource} from '@cycle/time';
 
 import {restartable} from '../../src/restart';
 
@@ -11,24 +12,6 @@ const shittyListener = {
   error: () => {},
   complete: () => {}
 };
-
-function Scheduler () {
-  const state = {
-    queue: []
-  }
-
-  return {
-    queue: state.queue,
-    scheduleAbsolute (argument, time, f) {
-      state.queue.push({argument, time, f});
-    },
-    start () {
-      state.queue.sort((a, b) => a.time < b.time).forEach(entry => {
-        entry.f(entry.argument)
-      })
-    }
-  }
-}
 
 describe('restartable', () => {
   // TODO - how to check if stream is disposed in xstream
@@ -135,13 +118,11 @@ describe('restartable', () => {
 
     pause$.shamefullySendNext(false);
 
-    setTimeout(() => {
-      source$.shamefullySendNext(2);
+    source$.shamefullySendNext(2);
 
-      pause$.shamefullySendNext(true);
+    pause$.shamefullySendNext(true);
 
-      source$.shamefullySendNext(3);
-    }, 5);
+    source$.shamefullySendNext(3);
   });
 
   describe('sources.log$', () => {
@@ -257,7 +238,7 @@ describe('restartable', () => {
 
   describe('replayLog', () => {
     it('schedules the events in the provided log$', (done) => {
-      const scheduler = Scheduler();
+      const Time = mockTimeSource();
 
       const testSubject = xs.create();
       const testDriver = () => testSubject;
@@ -277,17 +258,13 @@ describe('restartable', () => {
 
       testSubject.shamefullySendNext('snaz');
 
-      assert.equal(scheduler.queue.length, 0, 'schedule is empty to start');
+      restartableTestDriver.replayLog(Time._scheduler, driver.log$);
 
-      restartableTestDriver.replayLog(scheduler, driver.log$);
-
-      assert.equal(scheduler.queue.length, 1, 'schedule has an event after replayLog');
-
-      scheduler.start();
+      Time.run();
     });
 
-    it('options takes a time to replay to', (done) => {
-      const scheduler = Scheduler();
+    xit('options takes a time to replay to', (done) => {
+      const Time = mockTimeSource();
 
       const testSubject = xs.create();
       const testDriver = () => testSubject;
@@ -313,9 +290,9 @@ describe('restartable', () => {
         testSubject.shamefullySendNext('snaz2');
 
         setTimeout(() => {
-          restartableTestDriver.replayLog(scheduler, driver.log$, timeToResetTo);
+          restartableTestDriver.replayLog(Time._scheduler, driver.log$, timeToResetTo);
 
-          scheduler.start();
+          Time.run();
         }, 50);
       });
     });
