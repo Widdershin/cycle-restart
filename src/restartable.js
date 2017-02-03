@@ -219,7 +219,7 @@ export default function restartable (driver, opts = {}) {
       returnValue = wrapSource({streams, addLogEntry, pause$}, source);
     }
 
-    const oldReturnValueDispose = returnValue.dispose;
+    const oldReturnValueDispose = source.dispose;
 
     returnValue.dispose = function () {
       oldReturnValueDispose && oldReturnValueDispose.bind(returnValue)();

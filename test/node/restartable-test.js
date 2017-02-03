@@ -15,15 +15,22 @@ const shittyListener = {
 
 describe('restartable', () => {
   // TODO - how to check if stream is disposed in xstream
-  xit('disposes cleanly', (done) => {
-    const testDriver = () => xs.create();
+  it('disposes cleanly', (done) => {
+    const emptyStream = xs.create();
+    const testDriver = () => emptyStream;
+
+    let called = false;
+
+    emptyStream.dispose = () => {
+      if (!called) {
+        called = true;
+        done();
+      }
+    }
 
     const source = restartable(testDriver)();
 
     source.dispose();
-    assert.equal(source.isDisposed, true);
-
-    done();
   });
 
   xit('totally disposes sources as well', (done) => {
