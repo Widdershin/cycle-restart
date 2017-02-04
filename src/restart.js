@@ -4,8 +4,6 @@ import restartable from './restartable';
 import {mockTimeSource} from '@cycle/time';
 
 function restart (main, drivers, cb, {sources, sinks, dispose}, isolate = {}, timeToTravelTo = null) {
-  dispose();
-
   if (typeof isolate === 'function' && 'reset' in isolate) {
     isolate.reset();
   }
@@ -54,6 +52,8 @@ function restart (main, drivers, cb, {sources, sinks, dispose}, isolate = {}, ti
 
       setTimeout(() => cb(err));
     }
+
+    dispose();
   });
 
   return sourcesAndSinksAndDispose;
