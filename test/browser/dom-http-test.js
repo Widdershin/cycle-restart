@@ -88,32 +88,42 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
     }
 
     let rerun = rerunner(run, driversFn);
-    const {sinks} = rerun(main, () => {
-      let responseText;
+    rerun(main, {
+      start ({sinks}) {
+        let responseText;
 
-      sinks.responses$.take(1).addListener({error: err, next: text => {
-        responseText = text;
-        assert.equal(text, 'Hello, world! - boo');
+        sinks.responses$.take(1).addListener({error: err, next: text => {
+          responseText = text;
+          assert.equal(text, 'Hello, world! - boo');
 
-        assert.equal(
-          requestCount, 2,
-          `Expected requestCount to be 2 prior to restart, was ${requestCount}.`
-        );
-
-        const restartedSinks = rerun(main).sinks;
-
-        restartedSinks.responses$.take(1).addListener({error: err, next: text => {
-          assert.equal(text, responseText);
           assert.equal(
             requestCount, 2,
-            `Expected requestCount to be 2 after restart, was ${requestCount}.`
+            `Expected requestCount to be 2 prior to restart, was ${requestCount}.`
           );
 
-          done();
-        }});
-      }});
+          rerun(main, {
+            start ({sinks}) {
+              sinks.responses$.take(1).addListener({error: err, next: text => {
+                assert.equal(text, responseText);
+                assert.equal(
+                  requestCount, 2,
+                  `Expected requestCount to be 2 after restart, was ${requestCount}.`
+                );
 
-      $('.click').click();
+
+                done();
+              }});
+            },
+
+            stop () {
+            }
+          });
+        }});
+
+        $('.click').click();
+      },
+
+      stop () {}
     });
   });
 
@@ -134,31 +144,41 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
       done(new Error('test failed: ' + e.message));
     }
 
-    const {sinks} = rerun(WikipediaSearchBox, () => {
-      sinks.results$.drop(1).take(1).addListener({error: err, next: data => {
-        assert.equal(data.items[0].full_name, 'woah');
-
-        assert.equal(
-          wikiRequest, 2,
-          `Expected requestCount to be 2 prior to restart, was ${wikiRequest}.`
-        );
-
-        const restartedSinks = rerun(WikipediaSearchBox).sinks;
-
-        restartedSinks.results$.drop(1).take(1).addListener({error: err, next: newData => {
-          assert.equal(newData.items[0].full_name, 'woah');
+    rerun(WikipediaSearchBox, {
+      start ({sinks})  {
+        sinks.results$.drop(1).take(1).addListener({error: err, next: data => {
+          assert.equal(data.items[0].full_name, 'woah');
 
           assert.equal(
             wikiRequest, 2,
-            `Expected requestCount to be 2 after restart, was ${wikiRequest}.`
+            `Expected requestCount to be 2 prior to restart, was ${wikiRequest}.`
           );
 
-          done();
-        }});
-      }});
+          rerun(WikipediaSearchBox, {
+            start ({sinks}) {
+              sinks.results$.drop(1).take(1).addListener({error: err, next: newData => {
+                assert.equal(newData.items[0].full_name, 'woah');
 
-      container = $(selector);
-      container.find('.search').click()
+                assert.equal(
+                  wikiRequest, 2,
+                  `Expected requestCount to be 2 after restart, was ${wikiRequest}.`
+                );
+
+                done();
+              }});
+            },
+
+            stop () {
+            }
+          });
+        }});
+
+        container = $(selector);
+        container.find('.search').click()
+      },
+
+      stop () {
+      }
     });
   });
 
@@ -180,43 +200,51 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
       done(new Error('test failed: ' + e.message));
     }
 
-    const {sinks} = rerun(WikipediaSearchBox, () => {
-      container = $(selector);
-      container.find('.search').click()
+    rerun(WikipediaSearchBox, {
+      start ({sinks}) {
+        container = $(selector);
+        container.find('.search').click()
 
-      sinks.results$.drop(1).take(1).addListener({error: err, next: data => {
-        assert.equal(data.items[0].full_name, 'woah');
-
-        assert.equal(
-          wikiRequest, 2,
-          `Expected requestCount to be 2 prior to restart, was ${wikiRequest}.`
-        );
-
-        const restartedSinks = rerun(WikipediaSearchBox).sinks;
-
-        restartedSinks.results$.drop(1).take(1).addListener({error: err, next: newData => {
-          assert.equal(newData.items[0].full_name, 'woah');
+        sinks.results$.drop(1).take(1).addListener({error: err, next: data => {
+          assert.equal(data.items[0].full_name, 'woah');
 
           assert.equal(
             wikiRequest, 2,
-            `Expected requestCount to be 2 after restart, was ${wikiRequest}.`
+            `Expected requestCount to be 2 prior to restart, was ${wikiRequest}.`
           );
 
-          container = $(selector);
-          container.find('.search').click();
+          rerun(WikipediaSearchBox, {
+            start ({sinks}) {
+              sinks.results$.drop(1).take(1).addListener({error: err, next: newData => {
+                assert.equal(newData.items[0].full_name, 'woah');
 
-          restartedSinks.results$.drop(1).take(1).addListener({error: err, next: () => {
+                assert.equal(
+                  wikiRequest, 2,
+                  `Expected requestCount to be 2 after restart, was ${wikiRequest}.`
+                );
 
-            assert.equal(
-              wikiRequest, 4,
-              `Expected requestCount to be 4 after more events performed post restart, was ${wikiRequest}.`
-            );
+                container = $(selector);
+                container.find('.search').click();
 
-            done();
-          }})
+                sinks.results$.drop(1).take(1).addListener({error: err, next: () => {
+
+                  assert.equal(
+                    wikiRequest, 4,
+                    `Expected requestCount to be 4 after more events performed post restart, was ${wikiRequest}.`
+                  );
+
+                  done();
+                }})
+              }});
+            },
+
+            stop () {}
+          });
         }});
-      }});
-    });
+      },
+
+      stop () {}
+    })
   });
 });
 

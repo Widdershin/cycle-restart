@@ -216,7 +216,9 @@ describe('restartable', () => {
         };
       };
 
-      const driver = restartable(testDriver)();
+      const Time = mockTimeSource();
+
+      const driver = restartable(testDriver)(xs.empty(), xstreamAdapter, Time);
 
       driver.select('snaz').addListener(blankListener);
 

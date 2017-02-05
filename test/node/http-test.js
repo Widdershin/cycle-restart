@@ -38,7 +38,7 @@ describe('restarting a cycle app that makes http requests', () => {
 
     return {
       HTTP: Start.mapTo('/a'),
-      responses$: responses$
+      responses$: responses$.remember()
     };
   }
 
@@ -62,32 +62,26 @@ describe('restarting a cycle app that makes http requests', () => {
           `Expected requestCount to be 1 prior to restart, was ${requestCount}.`
         );
 
-        let called = 0;
-
         rerun(main, () => {
           assert.equal(
             requestCount, 1,
             `Expected requestCount to be 1 after restart, was ${requestCount}.`
           );
 
-          called++;
-
-          if (called === 1) {
-            done();
-          }
+          done();
         });
       }, 20);
     });
   });
 
-  it('replays responses', (done) => {;
+  it('replays responses', (done) => {;;
     requestCount = 0;
 
     const start$ = xs.create();
 
     const driversFn = () => ({
       HTTP: restartable(makeHTTPDriver()),
-      Start: () => start$
+      Start: restartable(() => start$)
     });
 
     assert.equal(requestCount, 0);
@@ -109,17 +103,24 @@ describe('restarting a cycle app that makes http requests', () => {
         `Expected requestCount to be 2 prior to restart, was ${requestCount}.`
       );
 
-      const restartedSinks = rerun(main).sinks;
+      rerun(main, {
+        start ({sinks}) {
+          sinks.responses$.take(1).addListener(goodListener(text => {
+            assert.equal(text, 'Hello, world! - 2');
 
-      restartedSinks.responses$.take(1).addListener(goodListener(text => {
+            assert.equal(
+              requestCount, 2,
+              `Expected requestCount to be 2 after restart, was ${requestCount}.`
+            );
 
-        assert.equal(
-          requestCount, 2,
-          `Expected requestCount to be 2 after restart, was ${requestCount}.`
-        );
+            done();
+          }));
+        },
 
-        done();
-      }));
+        stop () {
+        }
+      });
+
     }));
 
     start$.shamefullySendNext('');

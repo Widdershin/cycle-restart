@@ -1,15 +1,28 @@
 import run from '@cycle/xstream-run';
 import xs from 'xstream';
 import restartable from './restartable';
-import {mockTimeSource} from '@cycle/time';
+import {timeDriver, mockTimeSource} from '@cycle/time';
 
 function restart (main, drivers, cb, {sources, sinks, dispose}, isolate = {}, timeToTravelTo = null) {
   if (typeof isolate === 'function' && 'reset' in isolate) {
     isolate.reset();
   }
 
+  const realTime = timeDriver();
+  realTime._pause();
+
+  drivers.Time = () => realTime;
+
   for (let driverName in drivers) {
     const driver = drivers[driverName];
+
+    const newDriver = (sink$, adapter) => driver(sink$, adapter, realTime);
+
+    newDriver.replayLog = driver.replayLog;
+    newDriver.onPostReplay = driver.onPostReplay;
+    newDriver.log$ = driver.log$;
+
+    drivers[driverName] = newDriver;
 
     if (driver.onPreReplay) {
       driver.onPreReplay();
@@ -26,7 +39,9 @@ function restart (main, drivers, cb, {sources, sinks, dispose}, isolate = {}, ti
     dispose: newDispose
   };
 
-  const Time = mockTimeSource();
+  if (typeof cb === 'object') {
+    cb.start(sourcesAndSinksAndDispose);
+  }
 
   for (let driverName in drivers) {
     const driver = drivers[driverName];
@@ -34,11 +49,13 @@ function restart (main, drivers, cb, {sources, sinks, dispose}, isolate = {}, ti
     if (driver.replayLog) {
       const log$ = sources[driverName].log$;
 
-      driver.replayLog(Time._scheduler, log$, timeToTravelTo);
+      driver.replayLog(realTime._scheduler, log$, timeToTravelTo);
     }
   }
 
-  Time.run((err) => {
+  const timeToRunTo = (sources.Time && sources.Time._time()) || null;
+
+  realTime._runVirtually((err) => {
     if (err) {
       throw err;
     }
@@ -49,12 +66,20 @@ function restart (main, drivers, cb, {sources, sinks, dispose}, isolate = {}, ti
       if (driver.onPostReplay) {
         driver.onPostReplay();
       }
-
-      setTimeout(() => cb(err));
     }
 
-    dispose();
-  });
+    setTimeout(() => {
+      dispose();
+
+      if (typeof cb === 'object') {
+        cb.stop(err);
+      } else {
+        cb(err);
+      }
+
+      realTime._resume(timeToRunTo);
+    });
+  }, timeToRunTo);
 
   return sourcesAndSinksAndDispose;
 }
@@ -69,7 +94,20 @@ function rerunner (Cycle, driversFn, isolate) {
     if (first) {
       drivers = driversFn();
 
+      let realTime = timeDriver();
+      drivers.Time = () => realTime;
+
+      for (let driverName in drivers) {
+        const driver = drivers[driverName];
+
+        const newDriver = (sink$, adapter) => driver(sink$, adapter, realTime);
+
+        drivers[driverName] = newDriver;
+      }
+
       const {sources, sinks, run} = Cycle(main, drivers);
+
+      realTime = sources.Time;
 
       const dispose = run();
 
@@ -77,9 +115,18 @@ function rerunner (Cycle, driversFn, isolate) {
 
       first = false;
 
-      setTimeout(() => cb());
-    }
-    else {
+      if (typeof cb === 'object') {
+        cb.start(sourcesAndSinksAndDispose);
+      }
+
+      setTimeout(() => {
+        if (typeof cb === 'object') {
+          cb.stop();
+        } else {
+          cb();
+        }
+      });
+    } else {
       drivers = driversFn();
 
       sourcesAndSinksAndDispose = restart(main, drivers, cb, sourcesAndSinksAndDispose, isolate, timeToTravelTo);
