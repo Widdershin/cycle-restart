@@ -10,8 +10,8 @@
     "test": "npm run test-node && npm run test-browser",
     "test-node": "mocha --compilers js:babel-core/register test/node/*",
     "autotest-node": "mocha --compilers js:babel-core/register --watch test/node/*",
-    "test-browser": "mochify --transform babelify --plugin proxyquireify/plugin test/browser/*",
-    "autotest-browser": "mochify --watch --transform babelify --plugin proxyquireify/plugin test/browser/*",
+    "test-browser": "mochify --transform babelify test/browser/*",
+    "autotest-browser": "mochify --watch --transform babelify test/browser/*",
     "precompile-lib": "rm -rf lib/ && mkdir -p lib",
     "compile-lib": "babel src -d lib",
     "prepublish": "npm run compile-lib"
@@ -34,11 +34,11 @@
   },
   "homepage": "https://github.com/Widdershin/cycle-restart",
   "devDependencies": {
-    "@cycle/dom": "^9.0.1",
     "@cycle/history": "^1.1.0",
-    "@cycle/http": "^7.1.0",
-    "@cycle/isolate": "^1.2.0",
+    "@cycle/http": "^11.2.0",
+    "@cycle/isolate": "^1.4.0",
     "@cycle/jsonp": "^5.0.0",
+    "@cycle/xstream-adapter": "^3.0.2",
     "babel-cli": "^6.3.15",
     "babel-core": "^6.3.15",
     "babel-plugin-transform-object-assign": "^6.3.13",
@@ -48,14 +48,14 @@
     "browserify": "^12.0.1",
     "jquery": "^2.1.4",
     "mocha": "^2.3.4",
-    "mochify": "^2.14.3",
-    "proxyquire": "^1.7.3",
-    "proxyquire-universal": "^1.0.8",
-    "proxyquireify": "^3.0.1",
-    "superagent-mock": "git://github.com/Widdershin/superagent-mock"
+    "mochify": "^2.18.1",
+    "superagent-mock": "^2.0.1"
   },
   "dependencies": {
-    "@cycle/core": "^6.0.0-rc2",
-    "rx": "^4.0.7"
+    "@cycle/dom": "^14.1.0",
+    "@cycle/time": "^0.4.0",
+    "@cycle/xstream-adapter": "^3.0.4",
+    "@cycle/xstream-run": "^4.1.0",
+    "xstream": "^9.0.0"
   }
 }

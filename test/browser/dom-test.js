@@ -1,9 +1,10 @@
 /* globals describe, it*/
 import assert from 'assert';
-import {run} from '@cycle/core';
+import run from '@cycle/xstream-run';
 import {makeDOMDriver, div, button} from '@cycle/dom';
 
 import {rerunner, restartable} from '../../src/restart';
+import xs from 'xstream';
 
 import $ from 'jquery';
 
@@ -26,8 +27,7 @@ describe('restarting a cycle app', () => {
       .select('.add')
       .events('click')
       .map(() => 1)
-      .scan((total, change) => total + change)
-      .startWith(0);
+      .fold((total, change) => total + change, 0)
 
     return {
       DOM: count$.map(count =>
@@ -44,8 +44,7 @@ describe('restarting a cycle app', () => {
       .select('.add')
       .events('click')
       .map(() => 2)
-      .scan((total, change) => total + change)
-      .startWith(0);
+      .fold((total, change) => total + change, 0)
 
     return {
       DOM: count$.map(count =>
@@ -58,25 +57,25 @@ describe('restarting a cycle app', () => {
   }
 
   it('is possible', (done) => {
-    const {container, selector} = makeTestContainer();
+    let {container, selector} = makeTestContainer();
 
-    const drivers = {
+    const driversFn = () => ({
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
-    };
+    });
 
-    let rerun = rerunner(run);
-    rerun(main, drivers);
+    let rerun = rerunner(run, driversFn);
+    rerun(main, () => {
+      container = $(selector);
+      assert.equal(container.find('.count').text(), 0);
 
-    setTimeout(() => {
       container.find('.add').click();
       container.find('.add').click();
       container.find('.add').click();
 
       assert.equal(container.find('.count').text(), 3);
 
-      rerun(newMain, drivers);
-
-      setTimeout(() => {
+      rerun(newMain, () => {
+        container = $(selector);
         assert.equal(container.find('.count').text(), 6);
 
         container.remove();
@@ -86,27 +85,27 @@ describe('restarting a cycle app', () => {
   });
 
   it('handles multiple restarts', (done) => {
-    const {container, selector} = makeTestContainer();
+    let {container, selector} = makeTestContainer();
 
-    const drivers = {
+    const driversFn = () => ({
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
-    };
+    });
 
-    let rerun = rerunner(run);
-    rerun(main, drivers);
+    let rerun = rerunner(run, driversFn);
 
-    assert.equal(container.find('.count').text(), 0);
+    rerun(main, () => {
+      assert.equal(container.find('.count').text(), 0);
 
-    setTimeout(() => {
+      container = $(selector);
+
       container.find('.add').click();
       container.find('.add').click();
       container.find('.add').click();
 
-      assert.equal(container.find('.count').text(), 3);
+      assert.equal(container.find('.count').text(), 3, 'first run');
 
-      rerun(main, drivers);
-
-      setTimeout(() => {
+      rerun(main, () => {
+        container = $(selector);
         assert.equal(container.find('.count').text(), 3);
 
         container.find('.add').click();
@@ -115,9 +114,9 @@ describe('restarting a cycle app', () => {
 
         assert.equal(container.find('.count').text(), 6);
 
-        rerun(main, drivers);
+        rerun(main, () => {
+          container = $(selector);
 
-        setTimeout(() => {
           assert.equal(container.find('.count').text(), 6);
 
           container.remove();
@@ -130,7 +129,7 @@ describe('restarting a cycle app', () => {
 
 describe('restarting a cycle app with multiple streams', () => {
   it('works', (done) => {
-    const {container, selector} = makeTestContainer();
+    let {container, selector} = makeTestContainer();
 
     function main ({DOM}) {
       const add$ = DOM
@@ -143,9 +142,9 @@ describe('restarting a cycle app with multiple streams', () => {
         .events('click')
         .map(() => -1);
 
-      const count$ = add$.merge(subtract$)
-        .scan((total, change) => total + change)
-        .startWith(0);
+      const count$ = xs
+        .merge(add$, subtract$)
+        .fold((total, change) => total + change, 0);
 
       return {
         DOM: count$.map(count =>
@@ -158,14 +157,14 @@ describe('restarting a cycle app with multiple streams', () => {
       };
     }
 
-    const drivers = {
+    const driversFn = () => ({
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
-    };
+    });
 
-    let rerun = rerunner(run);
-    rerun(main, drivers);
+    let rerun = rerunner(run, driversFn);
+    rerun(main, () => {
+      container = $(selector);
 
-    setTimeout(() => {
       container.find('.add').click();
       container.find('.add').click();
       container.find('.add').click();
@@ -174,14 +173,13 @@ describe('restarting a cycle app with multiple streams', () => {
 
       container.find('.subtract').click();
       container.find('.subtract').click();
-      container.find('.subtract').click();
 
-      assert.equal(container.find('.count').text(), 0);
+      assert.equal(container.find('.count').text(), 1);
 
-      rerun(main, drivers);
+      rerun(main, () => {
+        container = $(selector);
 
-      setTimeout(() => {
-        assert.equal(container.find('.count').text(), 0);
+        assert.equal(container.find('.count').text(), 1);
 
         container.remove();
         done();

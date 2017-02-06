@@ -1,18 +1,26 @@
-import {Observable, ReplaySubject, Subject} from 'rx';
+import xs from 'xstream';
+
+function pausable (pause$) {
+  return function (stream) {
+    return pause$
+      .map(paused => stream.filter(() => paused))
+      .flatten();
+  };
+}
 
 function disposeAllStreams (streams) {
-  Object.keys(streams).forEach(key => {
+  keys(streams).forEach(key => {
     const value = streams[key];
 
     delete streams[key];
 
-    value.dispose();
+    value && value.dispose && value.dispose();
   });
 }
 
-function makeDispose ({streams}, originalDispose) {
+function makeDispose ({streams}, originalDispose, context) {
   return function dispose () {
-    originalDispose();
+    originalDispose.bind(context)();
     disposeAllStreams(streams);
   };
 }
@@ -28,30 +36,32 @@ function onDispose (observable, disposeHandler) {
   return observable;
 }
 
-function record ({streams, addLogEntry, pause$}, streamToRecord, identifier) {
-  if (streams[identifier] === undefined) {
-    streams[identifier] = new Subject();
-  }
+function record ({streams, addLogEntry, pause$, Time}, streamToRecord, identifier) {
+  const stream = streamToRecord.compose(pausable(pause$.startWith(true))).map(event => {
+    if (typeof event.subscribe === 'function') {
+      const eventStream = event.debug((innerEvent) => {
+        addLogEntry({event: xs.of(innerEvent), time: Time._time(), identifier, stream});
+      });
 
-  const stream = streams[identifier];
+      eventStream.request = event.request;
 
-  const subscription = streamToRecord.pausable(pause$.startWith(true)).subscribe(event => {
-    addLogEntry({event, time: new Date(), identifier, stream});
+      return eventStream;
+    }
 
-    stream.onNext(event);
+
+    // TODO - need to use time from time driver
+    addLogEntry({event, time: Time._time(), identifier, stream}); // TODO - stream is undefined and unused
+
+    return event;
   });
 
-  onDispose(stream, () => subscription.dispose());
+  streams[identifier] = stream;
 
-  return stream;
+  return stream.debug(() => {});
 }
 
-function recordObservableSource ({streams, addLogEntry, pause$}, source) {
-  const source$ = new ReplaySubject(1);
-
-  streams[':root'] = source$;
-
-  const subscription = source.pausable(pause$.startWith(true)).subscribe(event => {
+function recordObservableSource ({streams, addLogEntry, pause$, Time}, source) {
+  const source$ = source.compose(pausable(pause$.startWith(true))).debug(event => {
     if (typeof event.subscribe === 'function') {
       const loggedEvent$ = event.do(response => {
         addLogEntry({
@@ -66,20 +76,20 @@ function recordObservableSource ({streams, addLogEntry, pause$}, source) {
 
       loggedEvent$.request = event.request;
 
-      source$.onNext(loggedEvent$);
+      source$.shamefullySendNext(loggedEvent$);
     } else {
-      source$.onNext(event);
-
       addLogEntry({event, time: new Date(), identifier: ':root'});
+
+      return event;
     }
   });
 
-  onDispose(source$, () => subscription.dispose());
+  streams[':root'] = source$;
 
   return source$;
 }
 
-function wrapSourceFunction ({streams, addLogEntry, pause$}, name, f, context, scope = []) {
+function wrapSourceFunction ({streams, addLogEntry, pause$, Time}, name, f, context, scope = []) {
   return function newSource (...args) {
     const newScope = scope.concat(args);
 
@@ -89,26 +99,36 @@ function wrapSourceFunction ({streams, addLogEntry, pause$}, name, f, context, s
       return returnValue;
     }
 
-    if (typeof returnValue.subscribe !== 'function') {
-      return wrapSource({streams, addLogEntry, pause$}, returnValue, newScope);
+    if (typeof returnValue.addListener !== 'function') {
+      return wrapSource({streams, addLogEntry, pause$, Time}, returnValue, newScope);
     }
 
     const identifier = newScope.join('/');
 
-    return record({streams, addLogEntry, pause$}, returnValue, identifier);
+    return record({streams, addLogEntry, pause$, Time}, returnValue, identifier);
   };
 }
 
-function wrapSource ({streams, addLogEntry, pause$}, source, scope = []) {
+function keys (obj) {
+  const _keys = [];
+
+  for (let prop in obj) {
+    _keys.push(prop);
+  }
+
+  return _keys;
+}
+
+function wrapSource ({streams, addLogEntry, pause$, Time}, source, scope = []) {
   const returnValue = {};
 
-  Object.keys(source).forEach(key => {
+  keys(source).forEach(key => {
     const value = source[key];
 
     if (key === 'dispose') {
-      returnValue[key] = makeDispose({streams}, value);
+      returnValue[key] = makeDispose({streams}, value, source);
     } else if (typeof value === 'function') {
-      returnValue[key] = wrapSourceFunction({streams, addLogEntry, pause$}, key, value, returnValue, scope);
+      returnValue[key] = wrapSourceFunction({streams, addLogEntry, pause$, Time}, key, value, returnValue, scope);
     } else {
       returnValue[key] = value;
     }
@@ -117,66 +137,95 @@ function wrapSource ({streams, addLogEntry, pause$}, source, scope = []) {
   return returnValue;
 }
 
-export default function restartable (driver, opts = {}) {
-  const logEntry$ = new Subject();
-  const log$ = logEntry$
-    .startWith([])
-    .scan((log, entry) => log.concat([entry]))
-    .shareReplay(1);
+const subscribe = (f) => ({
+  next: f,
+  error: (err) => console.error(err),
+  complete: () => {}
+});
+
+function createLog$() {
+  const logEntry$ = xs.create();
+  const logEntryReducer$ = logEntry$.map(entry => (log) => log.concat(entry));
+
+  const logReplace$ = xs.create();
+  const logReplaceReducer$ = logReplace$.map(newLog => (log) => newLog);
+
+  const logReducer$ = xs.merge(
+    logEntryReducer$,
+    logReplaceReducer$
+  )
+
+  const log$ = logReducer$
+    .fold((log, reducer) => reducer(log), [])
 
   function addLogEntry (entry) {
-    logEntry$.onNext(entry);
+    logEntry$.shamefullySendNext(entry);
   }
 
+  function replaceLog (newLog) {
+    logReplace$.shamefullySendNext(newLog);
+  }
+
+  return {log$, addLogEntry, replaceLog};
+}
+
+export default function restartable (driver, opts = {}) {
+  const {log$, addLogEntry, replaceLog} = createLog$();
   // TODO - dispose log subscription
-  log$.subscribe();
+  log$.addListener(subscribe(() => {}));
 
   const streams = {};
 
   const pauseSinksWhileReplaying = opts.pauseSinksWhileReplaying === undefined ? true : opts.pauseSinksWhileReplaying;
-  const pause$ = (opts.pause$ || Observable.empty()).startWith(true);
+  const pause$ = (opts.pause$ || xs.empty()).startWith(true);
   const replayOnlyLastSink = opts.replayOnlyLastSink || false;
 
   let replaying;
-  const lastSinkEvent$ = new ReplaySubject(1);
-  const finishedReplay$ = new Subject();
+  const isReplaying = () => replaying;
+  const setReplaying = (newReplaying) => replaying = newReplaying;
+  const finishedReplay$ = xs.create();
 
-  function restartableDriver (sink$) {
-    const filteredSink$ = new Subject();
+  function restartableDriver (sink$, streamAdapter, Time) {
+    const filteredSink$ = xs.create();
+    const lastSinkEvent$ = xs.createWithMemory();
 
     if (sink$) {
-      if (replaying && replayOnlyLastSink)  {
-        lastSinkEvent$.sample(finishedReplay$).take(1).subscribe((event) => {
-          filteredSink$.onNext(event);
-        });
+      if (isReplaying() && replayOnlyLastSink)  {
+        lastSinkEvent$.map(lastEvent => finishedReplay$.mapTo(lastEvent)).flatten().take(1).addListener(subscribe((event) => {
+          filteredSink$.shamefullySendNext(event);
+        }));
       }
 
       if (pauseSinksWhileReplaying) {
-        sink$.filter(() => !replaying).pausable(pause$).subscribe((ev) => filteredSink$.onNext(ev));
+        sink$.compose(pausable(pause$)).filter(() => !isReplaying()).addListener({
+          next: (ev) => filteredSink$.shamefullySendNext(ev),
+          error: (err) => console.error(err),
+          complete: () => {}
+        });
       } else {
-        sink$.pausable(pause$).subscribe((ev) => filteredSink$.onNext(ev));
+        sink$.compose(pausable(pause$)).addListener(subscribe((ev) => filteredSink$.shamefullySendNext(ev)));
       }
     }
 
-    filteredSink$.subscribe(lastSinkEvent$);
+    lastSinkEvent$.imitate(sink$);
 
-    const source = driver(filteredSink$);
+    const source = driver(filteredSink$, streamAdapter);
 
     let returnValue;
 
     if (source === undefined || source === null) {
       return source;
-    } else if (typeof source.subscribe === 'function') {
-      returnValue = recordObservableSource({streams, addLogEntry, pause$}, source);
+    } else if (typeof source.addListener === 'function') {
+      returnValue = recordObservableSource({streams, addLogEntry, pause$, Time}, source);
     } else {
-      returnValue = wrapSource({streams, addLogEntry, pause$}, source);
+      returnValue = wrapSource({streams, addLogEntry, pause$, Time}, source);
     }
 
-    const oldReturnValueDispose = returnValue.dispose;
+    const oldReturnValueDispose = source.dispose;
 
     returnValue.dispose = function () {
-      oldReturnValueDispose && oldReturnValueDispose();
-      sink$ && sink$.dispose();
+      oldReturnValueDispose && oldReturnValueDispose.bind(returnValue)();
+      sink$ && sink$.dispose && sink$.dispose();
 
       disposeAllStreams(streams);
     }
@@ -188,31 +237,45 @@ export default function restartable (driver, opts = {}) {
 
   function replayable (driver) {
     driver.onPreReplay = function () {
-      replaying = true;
+      setReplaying(true);
     };
 
-    driver.replayLog = function (scheduler, newLog$, timeToResetTo = null) {
-      newLog$.take(1).subscribe(newLog => {
-        function scheduleEvent (historicEvent) {
-          scheduler.scheduleAbsolute({}, historicEvent.time, () => {
-            if (streams[historicEvent.identifier]) {
-              streams[historicEvent.identifier].onNext(historicEvent.event);
+    driver.replayLog = function (schedule, newLog$, timeToResetTo = null) {
+      let logToReplaceWith;
+
+      newLog$.take(1).addListener({
+        next: newLog => {
+          logToReplaceWith = newLog;
+
+          function scheduleEvent (historicEvent) {
+            const stream = streams[historicEvent.identifier];
+
+            if (stream) {
+              schedule.next(stream, historicEvent.time, historicEvent.event);
             } else {
               console.error('Missing replay stream ', historicEvent.identifier)
             }
-          });
-        }
+          }
 
-        newLog.filter(event => timeToResetTo === null || event.time <= timeToResetTo).forEach(scheduleEvent);
-      });
+          newLog.filter(event => timeToResetTo === null || event.time <= timeToResetTo).forEach(scheduleEvent);
+        },
+
+        error: (err) => {
+          console.error(err);
+        },
+
+        complete: () => {
+          replaceLog(logToReplaceWith);
+        }
+      })
     };
 
     driver.onPostReplay = function () {
-      replaying = false;
-      finishedReplay$.onNext();
+      setReplaying(false);
+      finishedReplay$.shamefullySendNext();
     };
 
-    return restartableDriver;
+    return driver;
   }
 
   return replayable(restartableDriver);
