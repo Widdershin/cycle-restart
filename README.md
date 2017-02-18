@@ -1,4 +1,4 @@
-xstream-run-restart
+## cycle-restart
 
 Hot module reloading is super cool. You can change your code in an instant, and you don't have to reload the page to see the result.
 
@@ -156,7 +156,7 @@ Isolate?
     DOM: restartable(makeDOMDriver('.app'), {pauseSinksWhileReplaying: false}),
     HTTP: restartable(makeHTTPDriver())
   });
-  
+
 - const rerun = rerunner(Cycle, makeDrivers);
 + const rerun = rerunner(Cycle, makeDrivers, isolate);
   rerun(app);
