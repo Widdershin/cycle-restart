@@ -23,7 +23,7 @@ How do I use it?
 You'll want to set up your entry point (usually `index.js`) like so:
 
 ```js
-import Cycle from '@cycle/xstream-run';
+import {setup} from '@cycle/run';
 import {makeDOMDriver} from '@cycle/dom';
 import {makeHTTPDriver} from '@cycle/http';
 
@@ -36,7 +36,7 @@ const makeDrivers = () => ({
   HTTP: restartable(makeHTTPDriver())
 });
 
-let rerun = rerunner(Cycle, makeDrivers);
+let rerun = rerunner(setup, makeDrivers);
 rerun(app);
 
 if (module.hot) {
@@ -143,7 +143,7 @@ Isolate?
 `cycle-restart` does in fact support [isolate](https://github.com/cyclejs/isolate). If you use `isolate` in your apps, simply pass it as an extra argument to `restart`.
 
 ```diff
-  import {run} from '@cycle/xstream-run';
+  import {setup} from '@cycle/run';
   import {makeDOMDriver} from '@cycle/dom';
   import {makeHTTPDriver} from '@cycle/http';
 + import isolate from '@cycle/isolate';
@@ -157,8 +157,8 @@ Isolate?
     HTTP: restartable(makeHTTPDriver())
   });
 
-- const rerun = rerunner(Cycle, makeDrivers);
-+ const rerun = rerunner(Cycle, makeDrivers, isolate);
+- const rerun = rerunner(setup, makeDrivers);
++ const rerun = rerunner(setup, makeDrivers, isolate);
   rerun(app);
 
   if (module.hot) {
