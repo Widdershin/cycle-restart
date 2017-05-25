@@ -1,4 +1,4 @@
-import Cycle from '@cycle/xstream-run';
+import {setup} from '@cycle/run';
 import {makeDOMDriver} from '@cycle/dom';
 import {timeDriver} from '@cycle/time';
 import {restartable, rerunner} from '../../src/restart';
@@ -10,7 +10,7 @@ const driversFn = () => ({
   Time: timeDriver
 });
 
-const rerun = rerunner(Cycle, driversFn);
+const rerun = rerunner(setup, driversFn);
 
 rerun(main);
 
