@@ -10,9 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@cycle/dom": "^14.3.0",
-    "@cycle/http": "^11.3.0",
-    "@cycle/time": "^0.3.1",
+    "@cycle/dom": "^17.3.0",
+    "@cycle/http": "^13.3.0",
+    "@cycle/time": "^0.8.0",
     "@cycle/xstream-run": "^4.2.0"
   },
   "devDependencies": {
@@ -21,6 +21,6 @@
     "babel-preset-es2015": "^6.22.0",
     "babelify": "^7.3.0",
     "browserify-hmr": "^0.3.5",
-    "budo": "^9.4.7"
+    "budo": "^10.0.3"
   }
 }
