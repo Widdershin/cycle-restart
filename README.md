@@ -53,19 +53,19 @@ API
 
 `state` refers to the object containing the sinks and sources returned by `Cycle.run`.
 
-#####`restart(main, drivers, state, isolate = {}, destinationTime = null) => newstate`
+##### `restart(main, drivers, state, isolate = {}, destinationTime = null) => newstate`
 Runs a new `main` and `drivers`, and replays any available history recorded on `state`. Drivers will only be replayed if they are restartable.
 
 If you use `isolate` in your application, you should supply it so that its internal counter can be reset.
 
 You can also supply a Javascript Date as `destinationTime` if you wish to replay actions only up to a certain time.
 
-#####`restartable(driver, pauseSinksWhileReplaying = true) => newDriver`
+##### `restartable(driver, pauseSinksWhileReplaying = true) => newDriver`
 Wraps `driver` with the ability to record a log of actions and restart. When `restart` is called, actions recorded on the driver's associated sources are replayed onto the driver.
 
 If `pauseSinksWhileReplaying` is `true`, drivers will drop any items emitted during replay. Currently, this needs to be `false` for the DOM driver.
 
-#####`rerunner(run, isolate = {}) => rerun(main, drivers, destinationTime = null) => state`
+##### `rerunner(run, isolate = {}) => rerun(main, drivers, destinationTime = null) => state`
 Takes `Cycle.run` and produces a function that can be called with the same `main`, `drivers`, and `destinationTime` as `restart`, but automatically passes `isolate` and the previous `state`.
 
 The `rerun` pattern is an abstraction of the common use case where `state` is saved and passed to the next `restart` call, and `isolate` does not change. `rerun` can also be used instead of `Cycle.run` to start the application for the first time.
