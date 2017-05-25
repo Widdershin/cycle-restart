@@ -69,7 +69,7 @@ function restart (main, drivers, cb, {sources, sinks, dispose}, isolate = {}, ti
     }
 
     setTimeout(() => {
-      dispose();
+      // dispose();
 
       if (typeof cb === 'object') {
         cb.stop(err);
