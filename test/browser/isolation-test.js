@@ -1,6 +1,6 @@
 /* globals describe, it*/
 import assert from 'assert';
-import run from '@cycle/xstream-run';
+import {setup} from '@cycle/run';
 import {makeDOMDriver, div, button} from '@cycle/dom';
 import isolate from '@cycle/isolate';
 
@@ -74,7 +74,7 @@ describe('scoped components', () => {
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
     });
 
-    const rerun = rerunner(run, driversFn, isolate);
+    const rerun = rerunner(setup, driversFn, isolate);
 
     rerun(main, () => {
       container = $(selector);

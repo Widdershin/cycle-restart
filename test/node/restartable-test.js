@@ -2,7 +2,6 @@
 import assert from 'assert';
 import xs from 'xstream';
 import debounce from 'xstream/extra/debounce';
-import xstreamAdapter from '@cycle/xstream-adapter';
 import {mockTimeSource} from '@cycle/time';
 
 import {restartable} from '../../src/restart';
@@ -16,6 +15,8 @@ const blankListener = {
 describe('restartable', () => {
   // TODO - how to check if stream is disposed in xstream
   it('disposes cleanly', (done) => {
+    const Time = mockTimeSource();
+
     const emptyStream = xs.create();
     const testDriver = () => emptyStream;
 
@@ -28,15 +29,17 @@ describe('restartable', () => {
       }
     }
 
-    const source = restartable(testDriver)();
+    const source = restartable(testDriver)(xs.empty(), Time);
 
     source.dispose();
   });
 
   xit('totally disposes sources as well', (done) => {
+    const Time = mockTimeSource();
+
     const testDriver = () => ({foo: () => xs.create()});
 
-    const source = restartable(testDriver)();
+    const source = restartable(testDriver)(xs.empty(), Time);
 
     const stream = source.foo()
 
@@ -50,14 +53,18 @@ describe('restartable', () => {
   });
 
   it('handles write only drivers', (done) => {
+    const Time = mockTimeSource();
+
     const testDriver = () => {};
 
-    restartable(testDriver)(xs.empty());
+    restartable(testDriver)(xs.empty(), Time);
 
     done();
   });
 
   it('handles read only drivers', (done) => {
+    const Time = mockTimeSource();
+
     const testDriver = () => xs.empty();
 
     restartable(testDriver)();
@@ -66,6 +73,8 @@ describe('restartable', () => {
   });
 
   it('pauses sinks', (done) => {
+    const Time = mockTimeSource();
+
     let callCount = 0;
     const call$ = xs.create();
     const pause$ = xs.createWithMemory();
@@ -78,7 +87,7 @@ describe('restartable', () => {
       complete: () => {}
     });
 
-    restartable(testDriver, {pause$})(call$);
+    restartable(testDriver, {pause$})(call$, Time);
 
     assert.equal(callCount, 0);
 
@@ -96,6 +105,8 @@ describe('restartable', () => {
   });
 
   it('pauses sources', (done) => {
+    const Time = mockTimeSource();
+
     const source$ = xs.create();
     const pause$ = xs.createWithMemory();
 
@@ -103,7 +114,7 @@ describe('restartable', () => {
 
     const testDriver = () => source$;
 
-    const source = restartable(testDriver, {pause$})();
+    const source = restartable(testDriver, {pause$})(xs.empty(), Time);
 
     const expected = [1, 3];
 
@@ -134,10 +145,11 @@ describe('restartable', () => {
 
   describe('sources.log$', () => {
     it('is observable', (done) => {
+      const Time = mockTimeSource();
       const testSubject = xs.create();
       const testDriver = () => testSubject;
 
-      const driver = restartable(testDriver)();
+      const driver = restartable(testDriver)(xs.empty(), Time);
 
       driver.log$.take(1).addListener({
         next (log) {
@@ -218,7 +230,7 @@ describe('restartable', () => {
 
       const Time = mockTimeSource();
 
-      const driver = restartable(testDriver)(xs.empty(), xstreamAdapter, Time);
+      const driver = restartable(testDriver)(xs.empty(), Time);
 
       driver.select('snaz').addListener(blankListener);
 
@@ -253,7 +265,7 @@ describe('restartable', () => {
       const testDriver = () => testSubject;
       const restartableTestDriver = restartable(testDriver);
 
-      const driver = restartableTestDriver();
+      const driver = restartableTestDriver(xs.empty(), Time);
 
       driver.drop(1).take(1).addListener({
         next (val) {

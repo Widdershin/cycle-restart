@@ -185,7 +185,7 @@ export default function restartable (driver, opts = {}) {
   const setReplaying = (newReplaying) => replaying = newReplaying;
   const finishedReplay$ = xs.create();
 
-  function restartableDriver (sink$, streamAdapter, Time) {
+  function restartableDriver (sink$, Time) {
     const filteredSink$ = xs.create();
     const lastSinkEvent$ = xs.createWithMemory();
 
@@ -209,7 +209,7 @@ export default function restartable (driver, opts = {}) {
 
     lastSinkEvent$.imitate(sink$);
 
-    const source = driver(filteredSink$, streamAdapter);
+    const source = driver(filteredSink$);
 
     let returnValue;
 
