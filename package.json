@@ -49,6 +49,7 @@
     "jquery": "^2.1.4",
     "mocha": "^2.3.4",
     "mochify": "^2.18.1",
+    "phantomjs": "^2.1.7",
     "superagent-mock": "^2.0.1"
   },
   "dependencies": {
