@@ -1,12 +1,7 @@
 /* globals describe, it, before, after */
 import assert from 'assert';
-import run from '@cycle/xstream-run';
+import {setup} from '@cycle/run';
 import delay from 'xstream/extra/delay';
-
-const request = require('superagent');
-
-import {makeHTTPDriver} from '@cycle/http';
-const http = require('http');
 
 import {rerunner, restartable} from '../../src/restart';
 
@@ -30,7 +25,10 @@ const config = [
   }
 ];
 
+const request = require('../../node_modules/@cycle/http/node_modules/superagent');
 const superagentMock = require('superagent-mock')(request, config);
+
+import {makeHTTPDriver} from '@cycle/http';
 
 describe('restarting a cycle app that makes http requests', () => {
   function main ({HTTP, Start}) {
@@ -52,7 +50,7 @@ describe('restarting a cycle app that makes http requests', () => {
 
     assert.equal(requestCount, 0);
 
-    let rerun = rerunner(run, driversFn);
+    let rerun = rerunner(setup, driversFn);
     rerun(main, () => {
       start$.shamefullySendNext();
 
@@ -86,7 +84,8 @@ describe('restarting a cycle app that makes http requests', () => {
 
     assert.equal(requestCount, 0);
 
-    let rerun = rerunner(run, driversFn);
+    let rerun = rerunner(setup, driversFn);
+
     const {sinks} = rerun(main);
 
     const goodListener = (next) => ({
@@ -152,7 +151,7 @@ describe('restarting a cycle app that makes http requests', () => {
       complete: () => {}
     });
 
-    let rerun = rerunner(run, driversFn);
+    let rerun = rerunner(setup, driversFn);
     const {sinks} = rerun(requestMain);
 
     sinks.request$.take(1).addListener(goodListener(text => {

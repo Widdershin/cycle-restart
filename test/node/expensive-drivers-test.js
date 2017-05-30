@@ -1,6 +1,6 @@
 /* globals describe, it, before, after */
 import assert from 'assert';
-import run from '@cycle/xstream-run';
+import {setup} from '@cycle/run';
 import {restartable, restart, rerunner} from '../../src/restart';
 import xs from 'xstream';
 
@@ -32,7 +32,7 @@ describe('drivers with costly sinks', () => {
       Foo: restartable(driver, {replayOnlyLastSink: true, pauseSinksWhileReplaying: true})
     });
 
-    const rerun = rerunner(run, driversFn);
+    const rerun = rerunner(setup, driversFn);
     rerun(main, () => {
       assert.equal(callCount, 5);
 

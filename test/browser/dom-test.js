@@ -1,6 +1,6 @@
 /* globals describe, it*/
 import assert from 'assert';
-import run from '@cycle/xstream-run';
+import {setup} from '@cycle/run';
 import {makeDOMDriver, div, button} from '@cycle/dom';
 
 import {rerunner, restartable} from '../../src/restart';
@@ -63,7 +63,7 @@ describe('restarting a cycle app', () => {
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
     });
 
-    let rerun = rerunner(run, driversFn);
+    let rerun = rerunner(setup, driversFn);
     rerun(main, () => {
       container = $(selector);
       assert.equal(container.find('.count').text(), 0);
@@ -91,7 +91,7 @@ describe('restarting a cycle app', () => {
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
     });
 
-    let rerun = rerunner(run, driversFn);
+    let rerun = rerunner(setup, driversFn);
 
     rerun(main, () => {
       assert.equal(container.find('.count').text(), 0);
@@ -161,7 +161,7 @@ describe('restarting a cycle app with multiple streams', () => {
       DOM: restartable(makeDOMDriver(selector), {pauseSinksWhileReplaying: false})
     });
 
-    let rerun = rerunner(run, driversFn);
+    let rerun = rerunner(setup, driversFn);
     rerun(main, () => {
       container = $(selector);
 

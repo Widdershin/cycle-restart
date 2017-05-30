@@ -38,7 +38,6 @@
     "@cycle/http": "^13.3.0",
     "@cycle/isolate": "^2.1.0",
     "@cycle/jsonp": "^7.0.0",
-    "@cycle/xstream-adapter": "^3.0.2",
     "babel-cli": "^6.3.15",
     "babel-core": "^6.3.15",
     "babel-plugin-transform-object-assign": "^6.3.13",
@@ -53,10 +52,9 @@
     "superagent-mock": "^3.4.0"
   },
   "dependencies": {
-    "@cycle/dom": "^17.3.0",
+    "@cycle/dom": "^17.4.0",
+    "@cycle/run": "^3.1.0",
     "@cycle/time": "^0.8.0",
-    "@cycle/xstream-adapter": "^3.0.4",
-    "@cycle/xstream-run": "^4.1.0",
     "xstream": "^10.8.0"
   }
 }

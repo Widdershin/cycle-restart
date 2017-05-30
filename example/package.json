@@ -13,8 +13,8 @@
   "dependencies": {
     "@cycle/dom": "^17.3.0",
     "@cycle/http": "^13.3.0",
-    "@cycle/time": "^0.8.0",
-    "@cycle/xstream-run": "^4.2.0"
+    "@cycle/run": "^3.1.0",
+    "@cycle/time": "^0.8.0"
   },
   "devDependencies": {
     "babel-cli": "^6.22.2",

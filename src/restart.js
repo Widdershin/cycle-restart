@@ -1,9 +1,8 @@
-import run from '@cycle/xstream-run';
 import xs from 'xstream';
 import restartable from './restartable';
 import {timeDriver, mockTimeSource} from '@cycle/time';
 
-function restart (main, drivers, cb, {sources, sinks, dispose}, isolate = {}, timeToTravelTo = null) {
+function restart (setup, main, drivers, cb, {sources, sinks, dispose}, isolate = {}, timeToTravelTo = null) {
   dispose();
 
   if (typeof isolate === 'function' && 'reset' in isolate) {
@@ -18,7 +17,7 @@ function restart (main, drivers, cb, {sources, sinks, dispose}, isolate = {}, ti
   for (let driverName in drivers) {
     const driver = drivers[driverName];
 
-    const newDriver = (sink$, adapter) => driver(sink$, adapter, realTime);
+    const newDriver = (sink$) => driver(sink$, realTime);
 
     newDriver.replayLog = driver.replayLog;
     newDriver.onPostReplay = driver.onPostReplay;
@@ -31,7 +30,7 @@ function restart (main, drivers, cb, {sources, sinks, dispose}, isolate = {}, ti
     }
   }
 
-  const newSourcesSinksAndRun = run(main, drivers);
+  const newSourcesSinksAndRun = setup(main, drivers);
 
   const newDispose = newSourcesSinksAndRun.run();
 
@@ -100,7 +99,7 @@ function rerunner (Cycle, driversFn, isolate) {
       for (let driverName in drivers) {
         const driver = drivers[driverName];
 
-        const newDriver = (sink$, adapter) => driver(sink$, adapter, realTime);
+        const newDriver = (sink$) => driver(sink$, realTime);
 
         drivers[driverName] = newDriver;
       }
@@ -129,7 +128,7 @@ function rerunner (Cycle, driversFn, isolate) {
     } else {
       drivers = driversFn();
 
-      sourcesAndSinksAndDispose = restart(main, drivers, cb, sourcesAndSinksAndDispose, isolate, timeToTravelTo);
+      sourcesAndSinksAndDispose = restart(Cycle, main, drivers, cb, sourcesAndSinksAndDispose, isolate, timeToTravelTo);
     }
     return sourcesAndSinksAndDispose;
   }

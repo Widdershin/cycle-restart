@@ -1,12 +1,12 @@
 /* globals describe, it*/
 import assert from 'assert';
-import run from '@cycle/xstream-run';
+import {setup} from '@cycle/run';
 import {button, div, a, makeDOMDriver} from '@cycle/dom';
 
 let requestCount = 0;
 let wikiRequest = 0;
 
-const request = require('superagent');
+const request = require('../../node_modules/@cycle/http/node_modules/superagent');
 
 const config = [
   {
@@ -87,7 +87,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
       done(new Error('test failed: ' + e.message));
     }
 
-    let rerun = rerunner(run, driversFn);
+    let rerun = rerunner(setup, driversFn);
     rerun(main, {
       start ({sinks}) {
         let responseText;
@@ -138,7 +138,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
     requestCount = 0;
     assert.equal(requestCount, 0);
 
-    let rerun = rerunner(run, driversFn);
+    let rerun = rerunner(setup, driversFn);
 
     const err = (e) => {
       done(new Error('test failed: ' + e.message));
@@ -194,7 +194,7 @@ describe('restarting a cycle app that makes http requests trigged by dom events'
     requestCount = 0;
     assert.equal(requestCount, 0);
 
-    let rerun = rerunner(run, driversFn);
+    let rerun = rerunner(setup, driversFn);
 
     const err = (e) => {
       done(new Error('test failed: ' + e.message));
