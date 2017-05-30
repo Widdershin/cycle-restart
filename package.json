@@ -49,11 +49,11 @@
     "mocha": "^3.4.2",
     "mochify": "^3.2.1",
     "phantomjs": "^2.1.7",
-    "superagent-mock": "^3.4.0"
+    "superagent-mock": "^3.4.0",
+    "@cycle/dom": "^17.4.0",
+    "@cycle/run": "^3.1.0"
   },
   "dependencies": {
-    "@cycle/dom": "^17.4.0",
-    "@cycle/run": "^3.1.0",
     "@cycle/time": "^0.8.0",
     "xstream": "^10.8.0"
   }
