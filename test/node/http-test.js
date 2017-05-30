@@ -32,11 +32,13 @@ import {makeHTTPDriver} from '@cycle/http';
 
 describe('restarting a cycle app that makes http requests', () => {
   function main ({HTTP, Start}) {
-    const responses$ = HTTP.select().flatten().map(res => res.text);
+    const responses$$ = HTTP.select()
+    const responses$ = responses$$.flatten().map(res => res.text);
 
     return {
       HTTP: Start.mapTo('/a'),
-      responses$: responses$.remember()
+      responses$: responses$.remember(),
+      responses$$
     };
   }
 
@@ -126,20 +128,20 @@ describe('restarting a cycle app that makes http requests', () => {
   });
 
   function requestMain ({HTTP}) {
-    const request$ = HTTP.select().flatten().map(res$ => res$.request)
+    const response$$ = HTTP.select()
+    const request$ = response$$.flatten().map(res$ => res$.request)
 
     return {
-      HTTP: xs.of('/a').compose(delay(50)),
-      request$
+      HTTP: xs.of('/a').compose(delay(10)),
+      request$,
+      response$$
     };
   }
 
-  it('has the request available on the response', (done) => {
+  it('has the request available on the response$', (done) => {
     requestCount = 0;
 
-    const driversFn = () => ({
-      HTTP: restartable(makeHTTPDriver())
-    });
+    const driversFn = () => ({HTTP: restartable(makeHTTPDriver())});
 
     assert.equal(requestCount, 0);
 
@@ -163,6 +165,45 @@ describe('restarting a cycle app that makes http requests', () => {
         assert.equal(text.url, '/a');
 
         done();
+      }));
+    }));
+  });
+
+  it('has the request available on the response$', (done) => {
+    requestCount = 0;
+
+    const driversFn = () => ({HTTP: restartable(makeHTTPDriver())});
+
+    assert.equal(requestCount, 0);
+
+    const goodListener = (next) => ({
+      next,
+
+      error: done,
+
+      complete: () => {}
+    });
+
+    let rerun = rerunner(setup, driversFn);
+    const {sinks} = rerun(requestMain);
+
+    sinks.response$$.take(1).addListener(goodListener(response$ => {
+      assert.equal(response$.request.url, '/a');
+
+      response$.addListener(goodListener(response => {
+        assert.equal(response.request.url, '/a');
+
+        const restartedSinks = rerun(requestMain).sinks;
+
+        restartedSinks.response$$.take(1).addListener(goodListener(response$ => {
+          assert.equal(response$.request.url, '/a');
+
+          response$.addListener(goodListener(response => {
+            assert.equal(response.request.url, '/a');
+
+            done();
+          }));
+        }));
       }));
     }));
   });

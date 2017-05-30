@@ -1,6 +1,5 @@
-import xs from 'xstream';
 import restartable from './restartable';
-import {timeDriver, mockTimeSource} from '@cycle/time';
+import {timeDriver} from '@cycle/time';
 
 function restart (setup, main, drivers, cb, {sources, sinks, dispose}, isolate = {}, timeToTravelTo = null) {
   dispose();

@@ -25,22 +25,15 @@ function makeDispose ({streams}, originalDispose, context) {
   };
 }
 
-function onDispose (observable, disposeHandler) {
-  const oldDispose = observable.dispose.bind(observable);
-
-  observable.dispose = () => {
-    disposeHandler();
-    oldDispose();
-  };
-
-  return observable;
-}
-
 function record ({streams, addLogEntry, pause$, Time}, streamToRecord, identifier) {
   const stream = streamToRecord.compose(pausable(pause$.startWith(true))).map(event => {
     if (typeof event.subscribe === 'function') {
       const eventStream = event.debug((innerEvent) => {
-        addLogEntry({event: xs.of(innerEvent), time: Time._time(), identifier, stream});
+        const response$ = xs.of(innerEvent);
+
+        response$.request = event.request;
+
+        addLogEntry({event: response$, time: Time._time(), identifier, stream});
       });
 
       eventStream.request = event.request;
@@ -117,7 +110,7 @@ function createLog$() {
   const logEntryReducer$ = logEntry$.map(entry => (log) => log.concat(entry));
 
   const logReplace$ = xs.create();
-  const logReplaceReducer$ = logReplace$.map(newLog => (log) => newLog);
+  const logReplaceReducer$ = logReplace$.map(newLog => () => newLog);
 
   const logReducer$ = xs.merge(
     logEntryReducer$,
