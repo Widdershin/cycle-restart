@@ -72,7 +72,7 @@ describe('restarting a cycle app that makes http requests', () => {
     });
   });
 
-  it('replays responses', (done) => {;;
+  it('replays responses', (done) => {
     requestCount = 0;
 
     const start$ = xs.create();

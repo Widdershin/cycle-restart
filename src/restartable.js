@@ -48,8 +48,6 @@ function record ({streams, addLogEntry, pause$, Time}, streamToRecord, identifie
       return eventStream;
     }
 
-
-    // TODO - need to use time from time driver
     addLogEntry({event, time: Time._time(), identifier, stream}); // TODO - stream is undefined and unused
 
     return event;
@@ -58,35 +56,6 @@ function record ({streams, addLogEntry, pause$, Time}, streamToRecord, identifie
   streams[identifier] = stream;
 
   return stream.debug(() => {});
-}
-
-function recordObservableSource ({streams, addLogEntry, pause$, Time}, source) {
-  const source$ = source.compose(pausable(pause$.startWith(true))).debug(event => {
-    if (typeof event.subscribe === 'function') {
-      const loggedEvent$ = event.do(response => {
-        addLogEntry({
-          event: Object.assign(
-            Observable.just(response),
-            event
-          ),
-          time: new Date(),
-          identifier: ':root'
-        });
-      });
-
-      loggedEvent$.request = event.request;
-
-      source$.shamefullySendNext(loggedEvent$);
-    } else {
-      addLogEntry({event, time: new Date(), identifier: ':root'});
-
-      return event;
-    }
-  });
-
-  streams[':root'] = source$;
-
-  return source$;
 }
 
 function wrapSourceFunction ({streams, addLogEntry, pause$, Time}, name, f, context, scope = []) {
@@ -216,7 +185,7 @@ export default function restartable (driver, opts = {}) {
     if (source === undefined || source === null) {
       return source;
     } else if (typeof source.addListener === 'function') {
-      returnValue = recordObservableSource({streams, addLogEntry, pause$, Time}, source);
+      returnValue = record({streams, addLogEntry, pause$, Time}, source, ':root');
     } else {
       returnValue = wrapSource({streams, addLogEntry, pause$, Time}, source);
     }

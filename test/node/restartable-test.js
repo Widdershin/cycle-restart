@@ -167,10 +167,12 @@ describe('restartable', () => {
     });
 
     it('emits updates', (done) => {
+      const Time = mockTimeSource();
+
       const testSubject = xs.create();
       const testDriver = () => testSubject;
 
-      const driver = restartable(testDriver)();
+      const driver = restartable(testDriver)(null, Time);
       driver.addListener(blankListener);
 
       const expectations = [
@@ -197,10 +199,11 @@ describe('restartable', () => {
     });
 
     it('shares the last value upon subscription', (done) => {
+      const Time = mockTimeSource();
       const testSubject = xs.create();
       const testDriver = () => testSubject;
 
-      const driver = restartable(testDriver)();
+      const driver = restartable(testDriver)(null, Time);
       driver.addListener(blankListener);
 
       testSubject.shamefullySendNext('foo');
