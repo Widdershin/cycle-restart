@@ -3,5 +3,7 @@ node_js:
   - "stable"
   - "6.9.1"
 
+before_install: if [[ `npm -v` != 5* ]]; then npm i -g npm@5; fi
+
 install:
   - npm install
