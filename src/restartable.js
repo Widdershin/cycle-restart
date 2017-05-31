@@ -1,4 +1,4 @@
-import xs from 'xstream';
+import xs, { MemoryStream } from 'xstream';
 
 function pausable (pause$) {
   return function (stream) {
@@ -149,7 +149,7 @@ export default function restartable (driver, opts = {}) {
 
   function restartableDriver (sink$, Time) {
     const filteredSink$ = xs.create();
-    const lastSinkEvent$ = xs.createWithMemory();
+    let lastSinkEvent$ = xs.createWithMemory();
 
     if (sink$) {
       if (isReplaying() && replayOnlyLastSink)  {
@@ -169,7 +169,11 @@ export default function restartable (driver, opts = {}) {
       }
     }
 
-    lastSinkEvent$.imitate(sink$);
+    if (sink$ instanceof MemoryStream) {
+      lastSinkEvent$ = sink$
+    } else {
+      lastSinkEvent$.imitate(sink$);
+    }
 
     const source = driver(filteredSink$);
 
