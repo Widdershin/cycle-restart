@@ -149,11 +149,10 @@ export default function restartable (driver, opts = {}) {
 
   function restartableDriver (sink$, Time) {
     const filteredSink$ = xs.create();
-    const isReplayingOnlyLastSink = isReplaying() && replayOnlyLastSink
     let lastSinkEvent$ = xs.createWithMemory();
 
     if (sink$) {
-      if (isReplayingOnlyLastSink)  {
+      if (isReplaying() && replayOnlyLastSink)  {
         lastSinkEvent$.map(lastEvent => finishedReplay$.mapTo(lastEvent)).flatten().take(1).addListener(subscribe((event) => {
           filteredSink$.shamefullySendNext(event);
         }));
@@ -170,8 +169,10 @@ export default function restartable (driver, opts = {}) {
       }
     }
 
-    if (isReplayingOnlyLastSink && !(sink$ instanceof MemoryStream)) {
+    if (!(sink$ instanceof MemoryStream)) {
       lastSinkEvent$.imitate(sink$);
+    } else {
+      lastSinkEvent$.imitate(sink$.filter(() => {}));
     }
 
     const source = driver(filteredSink$);
