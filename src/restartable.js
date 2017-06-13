@@ -169,11 +169,7 @@ export default function restartable (driver, opts = {}) {
       }
     }
 
-    if (!(sink$ instanceof MemoryStream)) {
-      lastSinkEvent$.imitate(sink$);
-    } else {
-      lastSinkEvent$.imitate(sink$.filter(() => {}));
-    }
+    lastSinkEvent$.imitate(sink$.filter(() => {}));
 
     const source = driver(filteredSink$);
 
