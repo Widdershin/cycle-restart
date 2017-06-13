@@ -149,7 +149,7 @@ export default function restartable (driver, opts = {}) {
 
   function restartableDriver (sink$, Time) {
     const filteredSink$ = xs.create();
-    let lastSinkEvent$ = xs.createWithMemory();
+    const lastSinkEvent$ = xs.createWithMemory();
 
     if (sink$) {
       if (isReplaying() && replayOnlyLastSink)  {
