@@ -1,4 +1,4 @@
-import xs, { MemoryStream } from 'xstream';
+import xs from 'xstream';
 
 function pausable (pause$) {
   return function (stream) {
