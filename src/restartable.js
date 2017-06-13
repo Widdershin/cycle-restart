@@ -169,6 +169,8 @@ export default function restartable (driver, opts = {}) {
       }
     }
 
+    // force sink$ to a normal stream with .filter() to prevent attempting
+    // imitation of a MemoryStream which can't be imitated
     lastSinkEvent$.imitate(sink$.filter(() => {}));
 
     const source = driver(filteredSink$);
