@@ -1,4 +1,5 @@
 import xs from 'xstream';
+import 'get-own-property-symbols';
 
 function pausable (pause$) {
   return function (stream) {
@@ -57,7 +58,8 @@ function wrapSourceFunction ({streams, addLogEntry, pause$, Time}, name, f, cont
 
     const returnValue = f.bind(context, ...args)();
 
-    if (name.indexOf('isolate') !== -1 || typeof returnValue !== 'object') {
+    /* Not all names will be strings, some may be symbols. */
+    if (typeof name === 'string' && name.indexOf('isolate') !== -1 || typeof returnValue !== 'object') {
       return returnValue;
     }
 
@@ -74,7 +76,17 @@ function wrapSourceFunction ({streams, addLogEntry, pause$, Time}, name, f, cont
 function keys (obj) {
   const _keys = [];
 
-  for (let prop in obj) {
+  for (const prop in obj) {
+    _keys.push(prop);
+  }
+
+  /* Expose all symbol properties as keys. */
+  for(const prop of Object.getOwnPropertySymbols(obj) ) {
+    _keys.push(prop);
+  }
+
+  /* Expose all prototype sybmol properties as keys. */
+  for(const prop of Object.getOwnPropertySymbols(Object.getPrototypeOf(obj) || {}) ) {
     _keys.push(prop);
   }
 
