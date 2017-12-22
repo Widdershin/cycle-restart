@@ -68,15 +68,13 @@ function restart (setup, main, drivers, cb, {sources, sinks, dispose}, isolate =
       }
     }
 
-    setTimeout(() => {
-      if (typeof cb === 'object') {
-        cb.stop(err);
-      } else {
-        cb(err);
-      }
+    if (typeof cb === 'object') {
+      cb.stop(err);
+    } else {
+      cb(err);
+    }
 
-      realTime._resume(timeToRunTo);
-    });
+    realTime._resume(timeToRunTo);
   }, timeToRunTo);
 
   return sourcesAndSinksAndDispose;
@@ -117,13 +115,11 @@ function rerunner (Cycle, driversFn, isolate) {
         cb.start(sourcesAndSinksAndDispose);
       }
 
-      setTimeout(() => {
-        if (typeof cb === 'object') {
-          cb.stop();
-        } else {
-          cb();
-        }
-      });
+      if (typeof cb === 'object') {
+        cb.stop();
+      } else {
+        cb();
+      }
     } else {
       drivers = driversFn();
 
