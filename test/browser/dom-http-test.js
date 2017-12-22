@@ -6,7 +6,7 @@ import {button, div, a, makeDOMDriver} from '@cycle/dom';
 let requestCount = 0;
 let wikiRequest = 0;
 
-const request = require('../../node_modules/@cycle/http/node_modules/superagent');
+const request = require('superagent');
 
 const config = [
   {

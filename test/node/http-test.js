@@ -25,7 +25,7 @@ const config = [
   }
 ];
 
-const request = require('../../node_modules/@cycle/http/node_modules/superagent');
+const request = require('superagent');
 const superagentMock = require('superagent-mock')(request, config);
 
 import {makeHTTPDriver} from '@cycle/http';
